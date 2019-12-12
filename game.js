@@ -47,7 +47,7 @@ class Game {
 			
 	_drawDude() {
 		this.context.beginPath();
-      	this.context.arc(this.x, HEIGHT - this.y, 100, 0, 2 * Math.PI, false);
+      	this.context.arc(this.x, HEIGHT - this.y, 100, Math.PI, 2 * Math.PI, false);
       	this.context.fillStyle = '#f9e711';
       	this.context.fill();
 		this._drawDudeEye();    
