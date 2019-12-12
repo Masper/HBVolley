@@ -15,6 +15,9 @@ class Game {
 	constructor() {
   		this.state = STATES.STOP;
   		this.x = 0;
+  		this.y = 0;
+  		this.jumping = false;
+  		this.goingUp = false;
 		this._initCanvas();
   		this._setControls();
   		this._drawDude(0);
@@ -33,6 +36,9 @@ class Game {
 				this.state = STATES.RIGHT;
 			} else if (event.key === 'ArrowLeft') {
 				this.state = STATES.LEFT;
+			} else if (event.key === 'ArrowUp') {
+				this.jumping = true;
+				this.goingUp = true;
 			} else {
 				this.state = STATES.STOP;
 			}
@@ -41,7 +47,7 @@ class Game {
 			
 	_drawDude() {
 		this.context.beginPath();
-      	this.context.arc(this.x, HEIGHT, 100, 0, 2 * Math.PI, false);
+      	this.context.arc(this.x, HEIGHT - this.y, 100, 0, 2 * Math.PI, false);
       	this.context.fillStyle = '#f9e711';
       	this.context.fill();
 		this._drawDudeEye();    
@@ -49,7 +55,7 @@ class Game {
 
 	_drawDudeEye() {
 		this.context.beginPath();
-      	this.context.arc(this.state === STATES.LEFT ? this.x - 30 : this.x + 30, HEIGHT - 60, 16, 0, 2 * Math.PI, false);
+      	this.context.arc(this.state === STATES.LEFT ? this.x - 30 : this.x + 30, HEIGHT - 60 - this.y, 16, 0, 2 * Math.PI, false);
       	this.context.fillStyle = '#000000';
       	this.context.fill();
 	}
@@ -57,11 +63,30 @@ class Game {
 	run() {
 		setInterval(() => {
 			this.context.clearRect(0, 0, WIDTH, HEIGHT);
+
+			if (this.jumping && this.y === 0) {
+				this.y += STEP_DISTANCE_PX;
+			} else if (this.jumping && this.goingUp) {
+				if (this.y < 100) {
+					this.y += STEP_DISTANCE_PX;
+				} else {
+					this.goingUp = false;
+					this.y -= STEP_DISTANCE_PX;
+				}
+			} else if (this.jumping && !this.goingUp) {
+				if (this.y > 0) {
+					this.y -= 10;
+				} else {
+					this.jumping = false;
+				}
+			}
+
 			if (this.state === STATES.RIGHT && this.x < WIDTH) {
 				this.x += STEP_DISTANCE_PX;
 			} else if (this.state === STATES.LEFT && this.x > 0) {
 				this.x -= STEP_DISTANCE_PX;
 			}
+
 			this._drawDude();
 		}, FRAME_SPEED_MS);
 	}
