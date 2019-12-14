@@ -1,0 +1,29 @@
+{
+  "name": "hbvolleyserver",
+  "version": "1.0.0",
+  "description": "server voor hbvolley",
+  "main": "app.js",
+  "scripts": {
+    "test": "node app"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bertcarsouw/HBVolley.git"
+  },
+  "keywords": [
+    "node",
+    "socket",
+    "server",
+    "game"
+  ],
+  "author": "C.Rang",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/bertcarsouw/HBVolley/issues"
+  },
+  "homepage": "https://github.com/bertcarsouw/HBVolley#readme",
+  "dependencies": {
+    "express": "^4.17.1",
+    "socket.io": "^2.3.0"
+  }
+}
