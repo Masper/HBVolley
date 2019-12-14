@@ -17,36 +17,44 @@ const HEIGHT = 500;
 
 const FRAME_SPEED_MS = 10;
 const STEP_DISTANCE_PX = 5;
+const GRAVITY = 0.05;
+
+// Not all momentum is returned
+const GROUND_BOUNCE = -0.86; 
+const WALL_BOUNCE = -1; 
 
 class Ball {
 
 	constructor(context, x, y) {
 		this.x = x;
 		this.y = y;
+		this.vector = {x: 0, y:0};
 		this.context = context; 
 		this.colour = BALL_COLOUR;
+		this.radius = BALL_RADIUS; 
 		this._drawBall();
 	}
 	
 	_drawBall() {
 		this.context.beginPath();
-		this.context.arc(this.x, HEIGHT - this.y, BALL_RADIUS, 0, 2 * Math.PI, false);
+		this.context.arc(this.x, HEIGHT - this.y, this.radius, 0, 2 * Math.PI, false);
 		this.context.fillStyle = this.colour; 
 		this.context.fill();
 	}
 
-	_calculatePosition() {		
-		if (this.y < BALL_RADIUS) {
-			this._outOfBounds();
-		}
-		else {
-		this.y -= STEP_DISTANCE_PX;
-		}
-	}
+	_calculatePosition() {
+		if (this.x <= this.radius / 2) {
+			this.vector.x *= WALL_BOUNCE;
+		} 
 
-	_outOfBounds() { 
-		this.colour = DEBUG2_COLOUR;
-	}
+		if (this.y <= this.radius / 2) {
+			this.vector.y *= GROUND_BOUNCE;
+		}
+
+		this.x += this.vector.x;
+		this.y += this.vector.y;
+		this.vector.y -= GRAVITY; 
+	}	
 }
 
 class Dude {
@@ -59,12 +67,13 @@ class Dude {
 		this.goingUp = false;
 		this.context = context;
 		this.colour = DUDE_COLOUR;
+		this.radius = DUDE_RADIUS;
 		this._drawDude();
 	}
 
 	_drawDude() {
 		this.context.beginPath();
-      	this.context.arc(this.x, HEIGHT - this.y, DUDE_RADIUS,  Math.PI, 2 * Math.PI, false);
+      	this.context.arc(this.x, HEIGHT - this.y, this.radius,  Math.PI, 2 * Math.PI, false);
       	this.context.fillStyle = this.colour; 
       	this.context.fill();
 		this._drawDudeEye();    
@@ -139,11 +148,15 @@ class Game {
 		var dy = this.dude.y - this.ball.y;
 		var distance = Math.sqrt(dx * dx + dy * dy);
 
-		if (distance < DUDE_RADIUS + BALL_RADIUS) {
- 	 		  this.dude.colour = DEBUG_COLOUR;
+		if (distance < this.dude.radius + this.ball.radius) {
+				this.dude.colour = DEBUG_COLOUR;
+				this._calculateReflection();
 		}
 	}
 			
+	_calculateReflection() {
+	}
+
 	run() {
 		setInterval(() => {
 			this.dude._calculatePosition();
