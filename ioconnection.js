@@ -14,10 +14,10 @@ class IOConnection {
 	}
 
 	onConnect = (event) => {
-        this.doSend("Hi servert..");
+		this.doSend("Hi servert..");
 	}
 	
 	doSend(message) {
-        this.socket.emit('message', message);
+		this.socket.emit('message', message);
 	}
-}
+}   
