@@ -7,6 +7,11 @@ const STATES = {
 const BALL_RADIUS = 25;
 const DUDE_RADIUS = 100;
 
+const BALL_COLOUR = '#FF5733'; 
+const DUDE_COLOUR = '#f9e711';
+const DEBUG_COLOUR = '#8FFF00'; 
+const DEBUG2_COLOUR = '#E116C0';
+
 const WIDTH = 750;
 const HEIGHT = 500;
 
@@ -19,18 +24,28 @@ class Ball {
 		this.x = x;
 		this.y = y;
 		this.context = context; 
+		this.colour = BALL_COLOUR;
 		this._drawBall();
 	}
 	
 	_drawBall() {
 		this.context.beginPath();
 		this.context.arc(this.x, HEIGHT - this.y, BALL_RADIUS, 0, 2 * Math.PI, false);
-		this.context.fillStyle = '#FF5733';
+		this.context.fillStyle = this.colour; 
 		this.context.fill();
 	}
 
-	_calculatePosition() {
+	_calculatePosition() {		
+		if (this.y < BALL_RADIUS) {
+			this._outOfBounds();
+		}
+		else {
 		this.y -= STEP_DISTANCE_PX;
+		}
+	}
+
+	_outOfBounds() { 
+		this.colour = DEBUG2_COLOUR;
 	}
 }
 
@@ -43,7 +58,7 @@ class Dude {
 		this.jumping = false;
 		this.goingUp = false;
 		this.context = context;
-		this.colour = '#f9e711';
+		this.colour = DUDE_COLOUR;
 		this._drawDude();
 	}
 
@@ -120,12 +135,12 @@ class Game {
 	}
 
 	_detectCollision() {
-	var dx = this.dude.x - this.ball.x;
-	var dy = this.dude.y - this.ball.y;
-	var distance = Math.sqrt(dx * dx + dy * dy);
+		var dx = this.dude.x - this.ball.x;
+		var dy = this.dude.y - this.ball.y;
+		var distance = Math.sqrt(dx * dx + dy * dy);
 
-	if (distance < DUDE_RADIUS + BALL_RADIUS) {
- 	 	  this.dude.colour = '#8FFF00';
+		if (distance < DUDE_RADIUS + BALL_RADIUS) {
+ 	 		  this.dude.colour = DEBUG_COLOUR;
 		}
 	}
 			
