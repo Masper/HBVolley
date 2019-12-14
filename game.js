@@ -4,6 +4,9 @@ const STATES = {
 	STOP: 'STOP'
 };
 
+const BALL_RADIUS = 25;
+const DUDE_RADIUS = 100;
+
 const WIDTH = 750;
 const HEIGHT = 500;
 
@@ -16,31 +19,38 @@ class Ball {
 		this.x = x;
 		this.y = y;
 		this.context = context; 
+		this._drawBall();
 	}
 	
 	_drawBall() {
 		this.context.beginPath();
-		this.context.arc(this.x, this.y, 25, 0, 2 * Math.PI, false);
+		this.context.arc(this.x, HEIGHT - this.y, BALL_RADIUS, 0, 2 * Math.PI, false);
 		this.context.fillStyle = '#FF5733';
 		this.context.fill();
+	}
+
+	_calculatePosition() {
+		this.y -= STEP_DISTANCE_PX;
 	}
 }
 
 class Dude {
 
 	constructor(context) {
-		this.x = 0;
+		this.x = 250;
 		this.y = 0;
 		this.state = STATES.STOP;
 		this.jumping = false;
 		this.goingUp = false;
 		this.context = context;
+		this.colour = '#f9e711';
+		this._drawDude();
 	}
 
 	_drawDude() {
 		this.context.beginPath();
-      	this.context.arc(this.x, HEIGHT - this.y, 100, Math.PI, 2 * Math.PI, false);
-      	this.context.fillStyle = '#f9e711';
+      	this.context.arc(this.x, HEIGHT - this.y, DUDE_RADIUS,  Math.PI, 2 * Math.PI, false);
+      	this.context.fillStyle = this.colour; 
       	this.context.fill();
 		this._drawDudeEye();    
 	}
@@ -82,7 +92,7 @@ class Game {
 
 	constructor() {
 		this._initCanvas();
-		this.ball = new Ball(this.context, 50, 50);
+		this.ball = new Ball(this.context, 250, 500);
 		this.dude = new Dude(this.context);
   		this._setControls();
 	}
@@ -108,11 +118,23 @@ class Game {
 			}
 		}
 	}
+
+	_detectCollision() {
+	var dx = this.dude.x - this.ball.x;
+	var dy = this.dude.y - this.ball.y;
+	var distance = Math.sqrt(dx * dx + dy * dy);
+
+	if (distance < DUDE_RADIUS + BALL_RADIUS) {
+ 	 	  this.dude.colour = '#8FFF00';
+		}
+	}
 			
 	run() {
 		setInterval(() => {
-			this.context.clearRect(0, 0, WIDTH, HEIGHT);
 			this.dude._calculatePosition();
+			this.ball._calculatePosition(); 	
+			this._detectCollision()	
+			this.context.clearRect(0, 0, WIDTH, HEIGHT);
 			this.dude._drawDude();
 			this.ball._drawBall();
 		}, FRAME_SPEED_MS);
