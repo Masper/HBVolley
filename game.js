@@ -21,6 +21,10 @@ const BARRIER_COLOUR = '#AB5733';
 const WIDTH = 750;
 const HEIGHT = 500;
 
+const MENU_FONT = "50px 'Lilita One";
+const MENU_FONT_COLOUR = '#FFFF00'
+const MENU_FONT_COLOUR_ACTIVE = '#E116C0';
+
 const WIDTH_BARRIER = 5;
 const HEIGHT_BARRIER = 125;
 
@@ -113,7 +117,6 @@ class Ball {
 }
 
 class Dude {
-
 	constructor(context, isPlayer) {
 		this.isPlayer = isPlayer; 
 		isPlayer ? this._initPlayer() : this._initEnemy();	
@@ -230,7 +233,6 @@ class Dude {
 }
 
 class Obstacle {
-
 	constructor(context) {
 		this.x = WIDTH/2;
 		this.y = HEIGHT - HEIGHT_BARRIER;
@@ -252,10 +254,99 @@ class Obstacle {
 }
 
 class Menu {
+	constructor (context, ioConnection) {
+		this.ioConnection = ioConnection;
+		this.context = context; 
+		this.show = true; 
+		this.menuFont = MENU_FONT; 
+		this.items = [];
+		// because the font won't always load
+		setTimeout(() => this._openingVisual(), 1000);
+		this._setControls();
 
+	}
 
-	constructor () {
+	_drawMenuItems() {
+		this.context.clearRect(0, 0, WIDTH, HEIGHT);
+		this.context.font = MENU_FONT;
+		console.log("here" + this.items.length);
 
+		for (let i = 0; i < this.items.length; i++) {	
+			let item = this.items[i];
+			if (item.active) {
+				this.context.fillStyle = MENU_FONT_COLOUR_ACTIVE;
+			}
+			else {
+				this.context.fillStyle = MENU_FONT_COLOUR;
+			}
+	
+			this.context.fillText(item.text, WIDTH * 0.3, HEIGHT * item.location); 
+		}
+	}
+
+	_setControls() {
+		window.onkeydown = event => {
+			if (event.key === 'ArrowDown') {
+				this._changeActive(DIRECTION.UP)
+			} else if (event.key === 'ArrowUp') {
+				this._changeActive(DIRECTION.DOWN); 
+			} else if (event.key === 'Enter') {
+			this._startGame();
+			}
+		}
+	}
+
+	_startGame() {
+		// should be callback for gamerunner
+		let game = new Game(this.context, this.ioConnection);
+		game.run();
+	}
+
+	_changeActive(direction) {
+		let active = this.items.find(e => e.active);
+		let index = this.items.indexOf(active);
+		this.items.forEach(e => e.active = false);
+
+		direction === DIRECTION.UP ? index +=1 : index -=1; 
+
+		if (index < 0) {
+			index = this.items.length-1;
+		}
+		if (index == this.items.length) {
+			index = 0;
+		}
+
+		this.items[index].active = true; 
+		this._drawMenuItems();
+		}
+
+	_openingVisual() { 
+		this.context.clearRect(0, 0, WIDTH, HEIGHT);
+		this.items.push(
+			{
+			'text' : 'SINGLE PLAYER GAME',
+			'location' : 0.3,
+			'active' :  true
+		  }
+		)
+		this.items.push(
+			{
+			'text' : 'TWO PLAYER GAME',
+			'location' :0.5,
+			'active' : false
+			}
+		)
+
+		this._drawMenuItems();
+	}
+}
+
+class GameRunner {	
+	constructor(ioConnection) {
+		this._initCanvas();
+		// reference to IO because no callback yet
+		this.menu = new Menu(this.context, ioConnection);
+		//this.game = new Game(this.context, ioConnection); 
 	}
 
 	_initCanvas() {
@@ -263,6 +354,10 @@ class Menu {
 		canvas.width = WIDTH;
   		canvas.height = HEIGHT;
   		this.context = canvas.getContext('2d');
+	}
+
+	run() {
+
 	}
 
 }
@@ -270,20 +365,14 @@ class Menu {
 
 class Game {
 
-	constructor(IOConnection) {
-		this._initCanvas();
+	constructor(context, IOConnection) {
+		this.context = context; 
+		this.menu = new Menu(this.context);
 		this.receivingTransmission = false;
 		this._addIOConnection(IOConnection); 
 		this.mode = MODE.TWO_PLAYER_MODE; 
 		this._initGameObjects() 
 		this._setControls();
-	}
-
-	_initCanvas() {
-		const canvas = document.getElementsByTagName('canvas')[0];
-		canvas.width = WIDTH;
-  		canvas.height = HEIGHT;
-  		this.context = canvas.getContext('2d');
 	}
 
 	_addIOConnection(IOConnection) {
@@ -326,7 +415,6 @@ class Game {
 			} else if (event.key === 'ArrowUp') {
 				dude._callJump(); 
 			} else if (event.key === 'd' && this.mode === MODE.TWO_PLAYER_MODE) {
-				console.log("d called");
 				dude2._goDirection(DIRECTION.RIGHT);
 			} else if (event.key === 'w' && this.mode === MODE.TWO_PLAYER_MODE) {
 				dude2._callJump();
