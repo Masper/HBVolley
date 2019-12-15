@@ -23,4 +23,12 @@ io.on("connection", socket => {
     socket.on('message', message => {
         console.log("Message received: " + message);
     })
+
+    socket.on('ball', message => {
+        console.log("ball: " + message.x + " " + message.y);
+    })
+
+    socket.on('dude', message => {
+        console.log("dude: " + message.x + " " + message.y);
+    })
 });

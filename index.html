@@ -59,8 +59,7 @@
 		<script src="game.js" type="text/javascript"></script>
 		<script src="ioconnection.js" type="text/javascript"></script>
 		<script type="text/javascript">
-			// const ioconnection = new IOConnection();
-			const game = new Game();
+			const game = new Game(new IOConnection());
 			game.run();
 		</script>
 

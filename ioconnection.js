@@ -20,4 +20,8 @@ class IOConnection {
 	doSend(message) {
 		this.socket.emit('message', message);
 	}
+
+	transmit(object) {
+		this.socket.emit(object.name,{'x' : object.x, 'y' : object.y});
+	}
 }   
