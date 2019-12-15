@@ -1,7 +1,8 @@
 const DIRECTION = {
 	LEFT: 'LEFT',
 	RIGHT: 'RIGHT',
-	STOP: 'STOP'
+	STOP: 'STOP',
+	UP: 'UP'
 };
 
 const BALL_RADIUS = 15;
@@ -20,8 +21,8 @@ const HEIGHT_BARRIER = 125;
 
 const FRAME_SPEED_MS = 8;
 const STEP_DISTANCE_PX = 1;
-const HORIZONTAL_MOMENTUM = 4; 
-const MOVEMENT_TICKS = 35; 
+const HORIZONTAL_MOMENTUM = 3; 
+const MOVEMENT_TICKS = 10; 
 const GRAVITY = 0.08;
 const INITAL_JUMP_VELOCITY = 6; 
 
@@ -34,10 +35,10 @@ class Ball {
 	constructor(context, x, y) {
 		this.x = x;
 		this.y = y;
-		this.vector = {x: 0, y:0};
 		this.context = context; 
 		this.colour = BALL_COLOUR;
 		this.radius = BALL_RADIUS; 
+		this.vector = {dx: 0, dy:0};
 		this._draw();
 	}
 	
@@ -48,20 +49,27 @@ class Ball {
 			y = 1-x;
 		}
 
-		let momentum = Math.abs(this.vector.x) + Math.abs(this.vector.y); 
+		let momentum = Math.abs(this.vector.dx) + Math.abs(this.vector.dy); 
 
 		// No friction applied here
-		this.vector.x = momentum * -x;
-		this.vector.y = momentum * y;
+		this.vector.dx = momentum * -x;
+		this.vector.dy = momentum * y;
 
-		this.vector.x += 0.1 * vector.x;
-		this.vector.y += 0.1 * vector.y; 
+		this.vector.dx += 0.1 * vector.dx;
+		this.vector.dy += 0.1 * vector.dy; 
 	}
 
-	_reverse(withBounce) {
-		this.vector.x *= WALL_FRICTION; 
-		if (withBounce) {
-			this.vector.y *= WALL_FRICTION;
+	_bounceWithDirection(direction) {
+		if (direction === DIRECTION.UP) {
+			this.vector.dy *= -1; 
+		}
+
+		if (direction === DIRECTION.LEFT) {
+			this.vector.dx = Math.abs(this.vector.dx)*-1;
+		}
+
+		if (direction === DIRECTION.RIGHT) {
+			this.vector.dx = Math.abs(this.vector.dx);
 		}
 	}
 
@@ -75,39 +83,46 @@ class Ball {
 	_calculatePosition() {
 		if (this.x <= this.radius / 2) {
 			this.x = this.radius / 2;
-			this.vector.x *= WALL_FRICTION;
+			this.vector.dx *= WALL_FRICTION;
 		}
 
 		if (this.x > WIDTH - this.radius/2) {
 			this.x = WIDTH - this.radius/2;
-			this.vector.x *= WALL_FRICTION;
+			this.vector.dx *= WALL_FRICTION;
 		} 
 
 		if (this.y <= this.radius ) {
 			this.y = this.radius ;
-			this.vector.y *= GROUND_FRICTION;
-			this.vector.x *= -1 * GROUND_FRICTION;
+			this.vector.dy *= GROUND_FRICTION;
+			this.vector.dx *= -1 * GROUND_FRICTION;
 		}
 
 		// Dampen the bouncing
-		if (this.vector.y < 1 && this.vector.y > 0)  {
-			this.vector.y = 0;
+		if (this.vector.dy < 1 && this.vector.dy > 0)  {
+			this.vector.dy = 0;
 		}
 
-		this.x += this.vector.x;
-		this.y += this.vector.y;
-		this.vector.y -= GRAVITY; 
+		this.x += this.vector.dx;
+		this.y += this.vector.dy;
+		this.vector.dy -= GRAVITY; 
 	}	
 }
 
 class Dude {
 
-	constructor(context) {
-		this.x = 250;
+	constructor(context, enemy) {
+		if (!enemy) {
+			this.colour = DUDE_COLOUR;
+			this.x = WIDTH * 1/3;
+		}
+		else {
+			this.colour = DEBUG_COLOUR; 
+			this.x = WIDTH * 2/3;
+		}
+		
 		this.y = 0;
-		this.vector = {x: 0, y:0};
+		this.vector = {dx: 0, dy:0};
 		this.context = context;
-		this.colour = DUDE_COLOUR;
 		this.radius = DUDE_RADIUS;
 		this._draw();
 	}
@@ -144,49 +159,54 @@ class Dude {
 
 	_calculatePosition() {
 		if (this.state === DIRECTION.LEFT) {
-			if (this.vector.y == 0) {
+			if (this.vector.dy == 0) {
 				this.ticks -= 1;
 			}
-			this.vector.x = -1 * HORIZONTAL_MOMENTUM;
+			this.vector.dx = -1 * HORIZONTAL_MOMENTUM;
 		}
 		else if (this.state === DIRECTION.RIGHT) {
-			if (this.vector.y == 0) {
+			if (this.vector.dy == 0) {
 				this.ticks -= 1;
 			}
-			this.vector.x = 1 * HORIZONTAL_MOMENTUM;
+			this.vector.dx = 1 * HORIZONTAL_MOMENTUM;
 		}
 
 		if (this.ticks == 0) {
 			this.state = DIRECTION.STOP;
-			this.vector.x = 0;
+			this.vector.dx = 0;
 		}
 
 		if (this.jumpCall) {
 			this.jumpCall = false; 
-			if (this.vector.y == 0 || this.y == 0) {
-				this.vector.y = INITAL_JUMP_VELOCITY;
+			if (this.vector.dy == 0 || this.y == 0) {
+				this.vector.dy = INITAL_JUMP_VELOCITY;
 			} 
 		}
 
-		this.x += this.vector.x;
-		this.y += this.vector.y;
-
-		if (this.x <= 0) {
-			this.x = 0;
-		} 
-
+		this.x += this.vector.dx;
+		this.y += this.vector.dy;
+	
 		if (this.x >= WIDTH) {
 			this.x = WIDTH;
 		}
 
+		if (this.x <= 0) {
+			this.x = 0; 
+		}
+
 		if (this.y >= 0) {
-			this.vector.y -= GRAVITY; 
+			this.vector.dy -= GRAVITY; 
+		}
+
+		if (this.y >= 0) {
+			this.vector.dy -= GRAVITY; 
 		}
 		else {
-			this.vector.y = 0; 
+			this.vector.dy = 0; 
 			this.y = 0;
 		}
 	}
+
 }
 
 class Obstacle {
@@ -235,8 +255,13 @@ class Game {
 	_initGameObjects() {
 		this.gameObjects = [];
 		this.gameObjects.push(new Ball(this.context, 250, 500));
-		this.gameObjects.push(new Dude(this.context));
+		this.gameObjects.push(new Dude(this.context, false));
 		this.gameObjects.push(new Obstacle(this.context));
+		this.gameObjects.push(new Dude(this.context, true))
+	}
+
+	_dude2() {
+		return this.gameObjects[3];
 	}
 
 	_dude() {
@@ -298,25 +323,50 @@ class Game {
 		this.IOConnection.transmit(dude);
 	}
 
-	_detectCollision() {
-		let dx = this._dude().x - this._ball().x;
-		let dy = this._dude().y - this._ball().y;
-		let distance = Math.sqrt(dx * dx + dy * dy);
+	_detectCollisionBallDudes() {
+		let dudes = []
+		dudes.push(this._dude());
+		dudes.push(this._dude2());
+		let ball = this._ball(); 
 
-		if (distance < this._dude().radius + this._ball().radius) {
-				this._calculateReflection();
+		for (let i = 0; i<dudes.length; i++) {	
+			let dude = dudes[i];
+			let dx = dude.x - ball.x;
+			let dy = dude.y - ball.y;
+			let distance = Math.sqrt(dx * dx + dy * dy);
+	
+			if (distance < dude.radius + ball.radius) {
+				let dx = (dude.x - ball.x) / (dude.radius + ball.radius);
+				ball._bounce(dx, dude.vector);
+			}
 		}
-		
-		if (this._detectCollisionBarrier()) {
-			let withBounce = false;
+	}
 
-			if (this._ball().y > this._obstacle().y + 0.8*this._ball().radius) {
-				withBounce = true; 
+	_detectCollisionBallObstacle() {
+		let ball = this._ball(); 
+		let obstacle = this._obstacle();
+
+		if (this._detectCollisionBarrier()) {
+
+			if (ball.y > obstacle.y) {
+				ball._bounceWithDirection(DIRECTION.UP);
 			}
 
-			this._ball()._reverse(withBounce);
-		}	
+			if (ball.x < obstacle.x) {
+				ball._bounceWithDirection(DIRECTION.LEFT);
+			}
+
+			if (ball.x > obstacle.x) {
+				ball._bounceWithDirection(DIRECTION.RIGHT);
+			}
+		}
 	}
+
+	_detectCollision() {
+		this._detectCollisionBallDudes();
+		this._detectCollisionBallObstacle();		
+	
+}
 			
 	_calculateReflection() {
 		let dx = (this._dude().x - this._ball().x) / (this._dude().radius + this._ball().radius);
