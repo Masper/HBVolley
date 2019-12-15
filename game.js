@@ -10,8 +10,8 @@ const MODE = {
 	TWO_PLAYER_MODE: 'TWO_PLAYER_MODE'
 }
 
-const BALL_RADIUS = 15;
-const DUDE_RADIUS = 70;
+const BALL_RADIUS = 12;
+const DUDE_RADIUS = 50;
 
 const BALL_COLOUR = '#FF5733'; 
 const DUDE_COLOUR = '#f9e711';
@@ -48,6 +48,7 @@ class Ball {
 		this.radius = BALL_RADIUS; 
 		this.vector = {dx: 0, dy:0};
 		this._draw();
+		this.hitGround = 0;
 	}
 	
 	_bounce(x, vector) {
@@ -100,6 +101,7 @@ class Ball {
 		} 
 
 		if (this.y <= this.radius ) {
+			this.hitGround += 1; 
 			this.y = this.radius ;
 			this.vector.dy *= GROUND_FRICTION;
 			this.vector.dx *= -1 * GROUND_FRICTION;
@@ -269,7 +271,6 @@ class Menu {
 	_drawMenuItems() {
 		this.context.clearRect(0, 0, WIDTH, HEIGHT);
 		this.context.font = MENU_FONT;
-		console.log("here" + this.items.length);
 
 		for (let i = 0; i < this.items.length; i++) {	
 			let item = this.items[i];
@@ -298,7 +299,15 @@ class Menu {
 
 	_startGame() {
 		// should be callback for gamerunner
-		let game = new Game(this.context, this.ioConnection);
+		let active = this.items.find(e => e.active);
+		let gameMode;
+		if (active.text === 'TWO PLAYER GAME') {
+			gameMode = MODE.TWO_PLAYER_MODE;
+		}
+		else {
+			gameMode = MODE.ONE_PLAYER_MODE;
+		}
+		let game = new Game(this.context, this.ioConnection, gameMode);
 		game.run();
 	}
 
@@ -357,20 +366,20 @@ class GameRunner {
 	}
 
 	run() {
-
 	}
 
 }
 
 
 class Game {
-
-	constructor(context, IOConnection) {
+	constructor(context, IOConnection, gameMode) {
+		this.mode = gameMode; 
 		this.context = context; 
 		this.menu = new Menu(this.context);
 		this.receivingTransmission = false;
+		this.score = {'left' : 0,
+					'right' : 0};
 		this._addIOConnection(IOConnection); 
-		this.mode = MODE.TWO_PLAYER_MODE; 
 		this._initGameObjects() 
 		this._setControls();
 	}
@@ -522,15 +531,73 @@ class Game {
 		}		
 	}
 
+	_restartGame() {
+		console.log("called");
+		this._initGameObjects();
+	}
+
+	_detectEnding() {
+		if (this._ball().hitGround > 0 ) {
+			if (this._updateScore()) {
+				this._restartGame(); 
+			}
+			else {
+				return true; 
+			}
+		}
+	}
+
+	_updateScore() {
+		this._ball().x < WIDTH/2 ? this.score.right++ : this.score.left++;
+
+		if (this.score.left < 3 && this.score.right < 3) {
+			return true; 
+		}
+		return false;
+	}
+
+	_drawScore() {
+		let score = this.score;
+		this.context.fillStyle = MENU_FONT_COLOUR_ACTIVE;
+		this.context.fillText(score.left + " : " + score.right, WIDTH * 0.45, HEIGHT * 0.1); 
+	}
+
+	_drawEnding() {
+		let text; 
+		if (this.score.left == 3) {
+			text = "Left";
+		}
+		if (this.score.right == 3) {
+			text = "Right";
+		}
+
+		this.context.fillText(text + " dude WINS!", WIDTH * 0.25, HEIGHT * 0.4); 	
+		this.stop();
+	}
+
+	stop() {
+		clearInterval(this.gameRun);
+		console.log("ending");
+	}
+
 	run() {
-		setInterval(() => {
+		this.gameRun = setInterval(() => {
 			this._detectCollision();
+	
 			this.gameObjects.forEach(a => a._calculatePosition());
+
 			if (this.IOConnection) {
 				this._transmitStatesBallAndDude(); 
 				this._receiveStateDude2();	
 			}
-			this.context.clearRect(0, 0, WIDTH, HEIGHT);	
+
+			this.context.clearRect(0, 0, WIDTH, HEIGHT);
+
+			if (this._detectEnding()) {
+				this._drawEnding();
+			}	
+
+			this._drawScore();
 			this.gameObjects.forEach(a => a._draw());
 		}, FRAME_SPEED_MS);
 	}
