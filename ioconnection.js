@@ -6,7 +6,9 @@ class IOConnection {
 	constructor() {
 		this.socket = io.connect(IP_ADDRESS + ":" + PORT);
 		this.socket.on('connect', this.onConnect);
-		this.socket.on('message', this.onMessage)
+		this.socket.on('message', this.onMessage);
+		this.socket.on('dude', this.onDude);
+		this.stack = [];
 	}
 
 	onMessage = (message) => {
@@ -15,6 +17,17 @@ class IOConnection {
 
 	onConnect = (event) => {
 		this.doSend("Hi servert..");
+	}
+
+	onDude = (message) => {
+		this.stack.push(message);
+	}
+
+	getInput = () => {
+		if (this.stack.length == 0) {
+			return null; 
+		}
+		return this.stack.pop();
 	}
 	
 	doSend(message) {

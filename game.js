@@ -110,21 +110,23 @@ class Ball {
 
 class Dude {
 
-	constructor(context, enemy) {
-		if (!enemy) {
-			this.colour = DUDE_COLOUR;
-			this.x = WIDTH * 1/3;
-		}
-		else {
-			this.colour = DEBUG_COLOUR; 
-			this.x = WIDTH * 2/3;
-		}
-		
-		this.y = 0;
+	constructor(context, isPlayer) {
+		this.isPlayer = isPlayer; 
+		isPlayer ? this._initPlayer() : this._initEnemy();	
 		this.vector = {dx: 0, dy:0};
 		this.context = context;
 		this.radius = DUDE_RADIUS;
 		this._draw();
+	}
+
+	_initPlayer() {
+		this.colour = DUDE_COLOUR;
+		this.x = WIDTH * 1/3
+	}
+
+	_initEnemy() {
+		this.colour = DEBUG_COLOUR; 
+		this.x = WIDTH * 2/3;
 	}
 
 	_draw() {
@@ -158,6 +160,9 @@ class Dude {
 	}
 
 	_calculatePosition() {
+		if (this.zombie) {
+			return; 
+		}
 		if (this.state === DIRECTION.LEFT) {
 			if (this.vector.dy == 0) {
 				this.ticks -= 1;
@@ -192,10 +197,6 @@ class Dude {
 
 		if (this.x <= 0) {
 			this.x = 0; 
-		}
-
-		if (this.y >= 0) {
-			this.vector.dy -= GRAVITY; 
 		}
 
 		if (this.y >= 0) {
@@ -236,9 +237,10 @@ class Game {
 
 	constructor(IOConnection) {
 		this._initCanvas();
+		this.receivingTransmission = false;
 		this._addIOConnection(IOConnection); 
 		this._initGameObjects() 
-  		this._setControls();
+		this._setControls();
 	}
 
 	_initCanvas() {
@@ -250,14 +252,15 @@ class Game {
 
 	_addIOConnection(IOConnection) {
 		this.IOConnection = IOConnection;
+		this.receivingTransmission = true;
 	}
 
 	_initGameObjects() {
 		this.gameObjects = [];
 		this.gameObjects.push(new Ball(this.context, 250, 500));
-		this.gameObjects.push(new Dude(this.context, false));
+		this.gameObjects.push(new Dude(this.context, true));
 		this.gameObjects.push(new Obstacle(this.context));
-		this.gameObjects.push(new Dude(this.context, true))
+		this.gameObjects.push(new Dude(this.context, false))
 	}
 
 	_dude2() {
@@ -278,17 +281,22 @@ class Game {
 
 	_setControls() {
 		window.onkeydown = event => {
+			let dude = this._dude();
 			if (event.key === 'ArrowRight') {
-				this._dude()._goDirection(DIRECTION.RIGHT);
+				dude._goDirection(DIRECTION.RIGHT);
+
 			} else if (event.key === 'ArrowLeft') {
-				this._dude()._goDirection(DIRECTION.LEFT);
+				dude._goDirection(DIRECTION.LEFT);
+
 			} else if (event.key === 'ArrowUp') {
-				this._dude()._callJump(); 
+				dude._callJump(); 
 			} 
 		}
 	}
 
-	_detectCollisionBarrier(){
+	_detectCollisionBarrier() {
+		// Le copy-paste stack
+
 		let circle={
 			x:this._ball().x,
 			y:this._ball().y,
@@ -306,7 +314,7 @@ class Game {
 		}
 	}
 
-	_transmitGameState() {
+	_transmitStatesBallAndDude() {
 		let ball = {
 			"name" : 'ball',
 			"x" : this._ball().x,
@@ -324,6 +332,8 @@ class Game {
 	}
 
 	_detectCollisionBallDudes() {
+		// Is based on a sphere dude
+
 		let dudes = []
 		dudes.push(this._dude());
 		dudes.push(this._dude2());
@@ -343,7 +353,7 @@ class Game {
 	}
 
 	_detectCollisionBallObstacle() {
-		let ball = this._ball(); 
+		let ball = this._ball();  
 		let obstacle = this._obstacle();
 
 		if (this._detectCollisionBarrier()) {
@@ -364,8 +374,7 @@ class Game {
 
 	_detectCollision() {
 		this._detectCollisionBallDudes();
-		this._detectCollisionBallObstacle();		
-	
+		this._detectCollisionBallObstacle();	
 }
 			
 	_calculateReflection() {
@@ -373,13 +382,26 @@ class Game {
 		this._ball()._bounce(dx, this._dude().vector);
 	}
 
+	_receiveStateDude2() {
+		if (this.receivingTransmission) {
+			let transmission =  this.IOConnection.getInput();
+			if (transmission != null) {
+				this._dude2().x = 2/3 * transmission.x;
+				this._dude2().y = transmission.y;
+			}
+		}		
+	}
+
 	run() {
 		setInterval(() => {
 			this._detectCollision();
 			this.gameObjects.forEach(a => a._calculatePosition());
+			if (this.IOConnection) {
+				this._transmitStatesBallAndDude(); 
+				this._receiveStateDude2();	
+			}
 			this.context.clearRect(0, 0, WIDTH, HEIGHT);	
 			this.gameObjects.forEach(a => a._draw());
-			this._transmitGameState(); 
 		}, FRAME_SPEED_MS);
 	}
 

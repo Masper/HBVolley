@@ -29,6 +29,7 @@ io.on("connection", socket => {
     })
 
     socket.on('dude', message => {
+        socket.emit('dude', message);
         console.log("dude: " + message.x + " " + message.y);
     })
 });
