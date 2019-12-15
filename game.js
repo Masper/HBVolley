@@ -190,13 +190,22 @@ class Dude {
 
 		this.x += this.vector.dx;
 		this.y += this.vector.dy;
-	
-		if (this.x >= WIDTH) {
-			this.x = WIDTH;
-		}
 
-		if (this.x <= 0) {
-			this.x = 0; 
+		if (this.isPlayer) {
+			if (this.x >= WIDTH/2 - this.radius) {
+				this.x = WIDTH/2 - this.radius;
+			}
+			if (this.x <= 0) {
+				this.x = 0; 
+			}
+		}
+		else {
+			if (this.x <= WIDTH/2 + this.radius) {
+				this.x = WIDTH/2 + this.radius;
+			}
+			if (this.x >= WIDTH) {
+				this.x = WIDTH; 
+			}
 		}
 
 		if (this.y >= 0) {
