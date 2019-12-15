@@ -5,6 +5,11 @@ const DIRECTION = {
 	UP: 'UP'
 };
 
+const MODE = {
+	ONE_PLAYER_MODE: 'ONE_PLAYER_MODE',
+	TWO_PLAYER_MODE: 'TWO_PLAYER_MODE'
+}
+
 const BALL_RADIUS = 15;
 const DUDE_RADIUS = 70;
 
@@ -15,6 +20,10 @@ const BARRIER_COLOUR = '#AB5733';
 
 const WIDTH = 750;
 const HEIGHT = 500;
+
+const MENU_FONT = "50px 'Lilita One";
+const MENU_FONT_COLOUR = '#FFFF00'
+const MENU_FONT_COLOUR_ACTIVE = '#E116C0';
 
 const WIDTH_BARRIER = 5;
 const HEIGHT_BARRIER = 125;
@@ -31,7 +40,6 @@ const GROUND_FRICTION = -0.86;
 const WALL_FRICTION = -1; 
 
 class Ball {
-
 	constructor(context, x, y) {
 		this.x = x;
 		this.y = y;
@@ -109,7 +117,6 @@ class Ball {
 }
 
 class Dude {
-
 	constructor(context, isPlayer) {
 		this.isPlayer = isPlayer; 
 		isPlayer ? this._initPlayer() : this._initEnemy();	
@@ -139,8 +146,14 @@ class Dude {
 
 	_drawDudeEye() {
 		this.context.beginPath();
+		if (this.isPlayer) {
       	this.context.arc(this.state === DIRECTION.LEFT ? this.x - this.radius/3: this.x + this.radius/3, HEIGHT - this.radius/1.8- this.y, this.radius/9, 0, 2 * Math.PI, false);
-      	this.context.fillStyle = '#000000';
+		}
+		else{
+			this.context.arc(this.state === DIRECTION.RIGHT ? this.x + this.radius/3: this.x - this.radius/3, HEIGHT - this.radius/1.8- this.y, this.radius/9, 0, 2 * Math.PI, false);
+
+		}
+		  this.context.fillStyle = '#000000';
       	this.context.fill();
 	}
 
@@ -190,13 +203,22 @@ class Dude {
 
 		this.x += this.vector.dx;
 		this.y += this.vector.dy;
-	
-		if (this.x >= WIDTH) {
-			this.x = WIDTH;
-		}
 
-		if (this.x <= 0) {
-			this.x = 0; 
+		if (this.isPlayer) {
+			if (this.x >= WIDTH/2 - this.radius) {
+				this.x = WIDTH/2 - this.radius;
+			}
+			if (this.x <= 0) {
+				this.x = 0; 
+			}
+		}
+		else {
+			if (this.x <= WIDTH/2 + this.radius) {
+				this.x = WIDTH/2 + this.radius;
+			}
+			if (this.x >= WIDTH) {
+				this.x = WIDTH; 
+			}
 		}
 
 		if (this.y >= 0) {
@@ -211,7 +233,6 @@ class Dude {
 }
 
 class Obstacle {
-
 	constructor(context) {
 		this.x = WIDTH/2;
 		this.y = HEIGHT - HEIGHT_BARRIER;
@@ -232,15 +253,100 @@ class Obstacle {
 	}
 }
 
-
-class Game {
-
-	constructor(IOConnection) {
-		this._initCanvas();
-		this.receivingTransmission = false;
-		this._addIOConnection(IOConnection); 
-		this._initGameObjects() 
+class Menu {
+	constructor (context, ioConnection) {
+		this.ioConnection = ioConnection;
+		this.context = context; 
+		this.show = true; 
+		this.menuFont = MENU_FONT; 
+		this.items = [];
+		// because the font won't always load
+		setTimeout(() => this._openingVisual(), 1000);
 		this._setControls();
+
+	}
+
+	_drawMenuItems() {
+		this.context.clearRect(0, 0, WIDTH, HEIGHT);
+		this.context.font = MENU_FONT;
+		console.log("here" + this.items.length);
+
+		for (let i = 0; i < this.items.length; i++) {	
+			let item = this.items[i];
+			if (item.active) {
+				this.context.fillStyle = MENU_FONT_COLOUR_ACTIVE;
+			}
+			else {
+				this.context.fillStyle = MENU_FONT_COLOUR;
+			}
+	
+			this.context.fillText(item.text, WIDTH * 0.3, HEIGHT * item.location); 
+		}
+	}
+
+	_setControls() {
+		window.onkeydown = event => {
+			if (event.key === 'ArrowDown') {
+				this._changeActive(DIRECTION.UP)
+			} else if (event.key === 'ArrowUp') {
+				this._changeActive(DIRECTION.DOWN); 
+			} else if (event.key === 'Enter') {
+			this._startGame();
+			}
+		}
+	}
+
+	_startGame() {
+		// should be callback for gamerunner
+		let game = new Game(this.context, this.ioConnection);
+		game.run();
+	}
+
+	_changeActive(direction) {
+		let active = this.items.find(e => e.active);
+		let index = this.items.indexOf(active);
+		this.items.forEach(e => e.active = false);
+
+		direction === DIRECTION.UP ? index +=1 : index -=1; 
+
+		if (index < 0) {
+			index = this.items.length-1;
+		}
+		if (index == this.items.length) {
+			index = 0;
+		}
+
+		this.items[index].active = true; 
+		this._drawMenuItems();
+		}
+
+	_openingVisual() { 
+		this.context.clearRect(0, 0, WIDTH, HEIGHT);
+		this.items.push(
+			{
+			'text' : 'SINGLE PLAYER GAME',
+			'location' : 0.3,
+			'active' :  true
+		  }
+		)
+		this.items.push(
+			{
+			'text' : 'TWO PLAYER GAME',
+			'location' :0.5,
+			'active' : false
+			}
+		)
+
+		this._drawMenuItems();
+	}
+}
+
+class GameRunner {	
+	constructor(ioConnection) {
+		this._initCanvas();
+		// reference to IO because no callback yet
+		this.menu = new Menu(this.context, ioConnection);
+		//this.game = new Game(this.context, ioConnection); 
 	}
 
 	_initCanvas() {
@@ -248,6 +354,25 @@ class Game {
 		canvas.width = WIDTH;
   		canvas.height = HEIGHT;
   		this.context = canvas.getContext('2d');
+	}
+
+	run() {
+
+	}
+
+}
+
+
+class Game {
+
+	constructor(context, IOConnection) {
+		this.context = context; 
+		this.menu = new Menu(this.context);
+		this.receivingTransmission = false;
+		this._addIOConnection(IOConnection); 
+		this.mode = MODE.TWO_PLAYER_MODE; 
+		this._initGameObjects() 
+		this._setControls();
 	}
 
 	_addIOConnection(IOConnection) {
@@ -282,15 +407,20 @@ class Game {
 	_setControls() {
 		window.onkeydown = event => {
 			let dude = this._dude();
+			let dude2 = this._dude2();
 			if (event.key === 'ArrowRight') {
 				dude._goDirection(DIRECTION.RIGHT);
-
 			} else if (event.key === 'ArrowLeft') {
 				dude._goDirection(DIRECTION.LEFT);
-
 			} else if (event.key === 'ArrowUp') {
 				dude._callJump(); 
-			} 
+			} else if (event.key === 'd' && this.mode === MODE.TWO_PLAYER_MODE) {
+				dude2._goDirection(DIRECTION.RIGHT);
+			} else if (event.key === 'w' && this.mode === MODE.TWO_PLAYER_MODE) {
+				dude2._callJump();
+			} else if (event.key === 'a' && this.mode === MODE.TWO_PLAYER_MODE) {
+				dude2._goDirection(DIRECTION.LEFT);
+			}
 		}
 	}
 
