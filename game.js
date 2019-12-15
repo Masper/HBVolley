@@ -298,7 +298,15 @@ class Menu {
 
 	_startGame() {
 		// should be callback for gamerunner
-		let game = new Game(this.context, this.ioConnection);
+		let active = this.items.find(e => e.active);
+		let gameMode;
+		if (active.text === 'TWO PLAYER GAME') {
+			gameMode = MODE.TWO_PLAYER_MODE;
+		}
+		else {
+			gameMode = MODE.ONE_PLAYER_MODE;
+		}
+		let game = new Game(this.context, this.ioConnection, gameMode);
 		game.run();
 	}
 
@@ -364,13 +372,12 @@ class GameRunner {
 
 
 class Game {
-
-	constructor(context, IOConnection) {
+	constructor(context, IOConnection, gameMode) {
+		this.mode = gameMode; 
 		this.context = context; 
 		this.menu = new Menu(this.context);
 		this.receivingTransmission = false;
 		this._addIOConnection(IOConnection); 
-		this.mode = MODE.TWO_PLAYER_MODE; 
 		this._initGameObjects() 
 		this._setControls();
 	}
