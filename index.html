@@ -6,6 +6,13 @@
 		<title>spel</title>
 		<link href="https://fonts.googleapis.com/css?family=Lilita+One&display=swap" rel="stylesheet">
 		<style type="text/css">
+			* {
+			    -webkit-user-select: none;
+  			  	-khtml-user-select: none;
+    			-moz-user-select: -moz-none;
+  				-o-user-select: none;
+			    user-select: none;
+			}
 			html {
 				margin: 0;
 				padding: 0;
@@ -21,6 +28,10 @@
 				font-size: 140px;
 				margin: 0 0 20px 0;
 				padding: 0; 
+				transition: all .2s ease-in-out;
+			}
+			h1:hover { 
+				transform: scale(1.1); 
 			}
 			.container {
 				position: fixed;
@@ -44,9 +55,11 @@
 			<canvas></canvas>
 		</div>
 		
+		<script src="https://cdn.socket.io/socket.io-1.4.5.js"></script>
 		<script src="game.js" type="text/javascript"></script>
+		<script src="ioconnection.js" type="text/javascript"></script>
 		<script type="text/javascript">
-			const game = new Game();
+			const game = new Game(new IOConnection());
 			game.run();
 		</script>
 
