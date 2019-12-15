@@ -7,7 +7,8 @@ const DIRECTION = {
 
 const MODE = {
 	ONE_PLAYER_MODE: 'ONE_PLAYER_MODE',
-	TWO_PLAYER_MODE: 'TWO_PLAYER_MODE'
+	TWO_PLAYER_MODE: 'TWO_PLAYER_MODE',
+	MULTI_PLAYER_MODE: 'MULTI_PLAYER_MODE'
 }
 
 const STATE = {
@@ -158,6 +159,10 @@ class Dude {
 		this.x = WIDTH * 2/3;
 	}
 
+	giveAi(ai) {
+		this.AI = ai;
+	}
+
 	_draw() {
 		this.context.beginPath();
       	this.context.arc(this.x, HEIGHT - this.y, this.radius,  Math.PI, 2 * Math.PI, false);
@@ -180,6 +185,12 @@ class Dude {
 	}
 
 	_goDirection(direction) {
+		console.log("moving");
+
+		if (direction === DIRECTION.STOP) {
+			this.ticks = 0; 
+			return; 
+		}
 		if (this.state === direction) {
 			this.ticks += MOVEMENT_TICKS;
 		}
@@ -192,6 +203,23 @@ class Dude {
 
 	_callJump() {
 		this.jumpCall = true; 
+	}
+
+	aiMove(ballx, bally) {
+		let jump;
+		let direction; 
+
+		if (this.AI) {
+			direction = this.AI.decideDirection(ballx, bally, this.x, this.y);
+			jump = this.AI.decideJump(ballx, bally, this.x, this.y); 
+		}
+		if (jump) {
+			this._callJump();
+		}
+
+		if (direction) {
+			this._goDirection(direction);
+		}
 	}
 
 	_calculatePosition() {
@@ -251,7 +279,69 @@ class Dude {
 			this.y = 0;
 		}
 	}
+}
 
+class AI {
+	constructor() {
+		this.randomTicks = 100; 
+	}
+
+	decideJump(ballx, bally, dudex, dudey) {
+		if (dudey != 0) {
+			return false;
+		}
+
+		if (ballx > WIDTH / 2 -50) {
+			return true; 
+		}
+	}
+
+	decideDirection(ballx, bally, dudex, dudey) {
+		console.log(ballx, WIDTH);
+
+		if (ballx-15 > dudex) {
+			return DIRECTION.RIGHT;
+		}
+		else if (ballx < WIDTH/2) {
+			return this._goToDirection(dudex, WIDTH*4/5);
+		}
+		else {
+			let direction = this._goToDirection(dudex, WIDTH*4/6);
+			return direction;
+		} 
+	}
+
+	_goToDirection(dudex, x) {
+		if (x  > dudex) {
+			return DIRECTION.RIGHT;
+		}
+		else if (x == dudex) {
+			return DIRECTION.STOP;
+		}
+		else {
+			return DIRECTION.LEFT; 
+		}
+	}
+
+	_randomMove() {
+
+		if (Math.random() > 0.11) {
+			return DIRECTION.STOP;
+		}
+		else if (Math.random() > 0.02) {
+			return DIRECTION.LEFT;
+		}
+		else return DIRECTION.RIGHT;
+	}
+
+	_returnMid(dudex, dudey) {
+		if (dudex < 2/3* WIDTH) {
+			return DIRECTION.RIGHT;
+		}
+		if (dudex > 3/4* WIDTH) {
+			return DIRECTION.LEFT; 
+		}
+	}
 }
 
 class Obstacle {
@@ -390,7 +480,6 @@ class GameRunner {
 
 }
 
-
 class Game {
 	constructor(context, IOConnection, gameMode) {
 		this.mode = gameMode; 
@@ -409,12 +498,21 @@ class Game {
 		this.receivingTransmission = true;
 	}
 
+	_initiateAi() {
+		if (this.mode === MODE.ONE_PLAYER_MODE) {
+			let dude = this._dude2();
+			dude.giveAi(new AI());
+			console.log("ai-added");
+		}
+	}
+
 	_initGameObjects() {
 		this.gameObjects = [];
 		this.gameObjects.push(new Ball(this.context, 250, 500));
 		this.gameObjects.push(new Dude(this.context, true));
 		this.gameObjects.push(new Obstacle(this.context));
 		this.gameObjects.push(new Dude(this.context, false))
+		this._initiateAi();
 	}
 
 	_dude2() {
@@ -625,10 +723,16 @@ class Game {
 		this.gameRun = setInterval(() => {
 			this.state = STATE.RUNNING;
 			this._detectCollision();
+
+			if (this.mode === MODE.ONE_PLAYER_MODE) {
+				let x = this._ball().x;
+				let y = this._ball().y;
+				this._dude2().aiMove(x,y);
+			}
 	
 			this.gameObjects.forEach(a => a._calculatePosition());
 
-			if (this.IOConnection) {
+			if (this.IOConnectio && this.mode === MODE.TWO_PLAYER_MODE) {
 				this._transmitStatesBallAndDude(); 
 				this._receiveStateDude2();	
 			}
