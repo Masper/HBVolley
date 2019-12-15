@@ -10,6 +10,11 @@ const MODE = {
 	TWO_PLAYER_MODE: 'TWO_PLAYER_MODE'
 }
 
+const STATE = {
+	RUNNING: 'RUNNING',
+	STOPPED: 'STOPPED'
+}
+
 const BALL_RADIUS = 12;
 const DUDE_RADIUS = 50;
 
@@ -25,17 +30,22 @@ const MENU_FONT = "50px 'Lilita One";
 const MENU_FONT_COLOUR = '#FFFF00'
 const MENU_FONT_COLOUR_ACTIVE = '#E116C0';
 
+const ENDING_TEXT_STYLING = "12px 'Lilita One";
+
 const WIDTH_BARRIER = 5;
 const HEIGHT_BARRIER = 125;
 
 const FRAME_SPEED_MS = 8;
+const APPLY_FRICTION_BOUNCE = true; 
 const STEP_DISTANCE_PX = 1;
 const HORIZONTAL_MOMENTUM = 3; 
 const MOVEMENT_TICKS = 10; 
 const GRAVITY = 0.08;
+const BALL_WEIGHT = 1.5;
 const INITAL_JUMP_VELOCITY = 6; 
 
 // Not all momentum is returned 
+const DUDE_FRICTION = 0.98;
 const GROUND_FRICTION = -0.86; 
 const WALL_FRICTION = -1; 
 
@@ -51,7 +61,7 @@ class Ball {
 		this.hitGround = 0;
 	}
 	
-	_bounce(x, vector) {
+	_bounce(x, vector, underneath) {
 		let y = 1+x;
 
 		if (x > 0 ) {
@@ -60,12 +70,22 @@ class Ball {
 
 		let momentum = Math.abs(this.vector.dx) + Math.abs(this.vector.dy); 
 
+		if (APPLY_FRICTION_BOUNCE) {
+			this.vector.dx = momentum * -x * DUDE_FRICTION;
+			this.vector.dy = momentum * y * DUDE_FRICTION;
+		}
+		else {
 		// No friction applied here
 		this.vector.dx = momentum * -x;
 		this.vector.dy = momentum * y;
+		}
 
 		this.vector.dx += 0.1 * vector.dx;
 		this.vector.dy += 0.1 * vector.dy; 
+
+		if (underneath) {
+			this.vector.dy = Math.abs(this.vector.dy) * -1;
+		}
 	}
 
 	_bounceWithDirection(direction) {
@@ -107,7 +127,7 @@ class Ball {
 			this.vector.dx *= -1 * GROUND_FRICTION;
 		}
 
-		// Dampen the bouncing
+		// Dampen the bouncing on the floor (not applicable for game)
 		if (this.vector.dy < 1 && this.vector.dy > 0)  {
 			this.vector.dy = 0;
 		}
@@ -429,6 +449,8 @@ class Game {
 				dude2._callJump();
 			} else if (event.key === 'a' && this.mode === MODE.TWO_PLAYER_MODE) {
 				dude2._goDirection(DIRECTION.LEFT);
+			} else if (event.key === 'Enter' && this.state === STATE.STOPPED) {
+				this._restartGame();
 			}
 		}
 	}
@@ -485,8 +507,12 @@ class Game {
 			let distance = Math.sqrt(dx * dx + dy * dy);
 	
 			if (distance < dude.radius + ball.radius) {
-				let dx = (dude.x - ball.x) / (dude.radius + ball.radius);
-				ball._bounce(dx, dude.vector);
+				let underneath = false;
+				if (dx > ball.radius) {
+					underneath = true; 
+				}
+				let dx2 = (dude.x - ball.x) / (dude.radius + ball.radius);
+				ball._bounce(dx2, dude.vector, underneath);
 			}
 		}
 	}
@@ -531,20 +557,30 @@ class Game {
 		}		
 	}
 
-	_restartGame() {
-		console.log("called");
+	_nextPoint() {
 		this._initGameObjects();
 	}
 
 	_detectEnding() {
 		if (this._ball().hitGround > 0 ) {
 			if (this._updateScore()) {
-				this._restartGame(); 
+				this._nextPoint(); 
 			}
 			else {
 				return true; 
 			}
 		}
+	}
+
+	_restartGame() { 
+		this._initGameObjects();
+		this._resetScore();
+		this.run();
+	}
+
+	_resetScore() {
+		this.score.left = 0;
+		this.score.right = 0;
 	}
 
 	_updateScore() {
@@ -565,23 +601,29 @@ class Game {
 	_drawEnding() {
 		let text; 
 		if (this.score.left == 3) {
+			this.context.fillStyle = DUDE_COLOUR; 
 			text = "Left";
 		}
 		if (this.score.right == 3) {
+			this.context.fillStyle = DEBUG_COLOUR; 
 			text = "Right";
 		}
 
-		this.context.fillText(text + " dude WINS!", WIDTH * 0.25, HEIGHT * 0.4); 	
+		this.context.fillText(text + " dude WINS!", WIDTH * 0.25, HEIGHT * 0.4); 
+		this.context.fillText("enter for restart...", WIDTH * 0.3, HEIGHT * 0.6);
+
 		this.stop();
 	}
 
 	stop() {
 		clearInterval(this.gameRun);
+		this.state = STATE.STOPPED; 
 		console.log("ending");
 	}
 
 	run() {
 		this.gameRun = setInterval(() => {
+			this.state = STATE.RUNNING;
 			this._detectCollision();
 	
 			this.gameObjects.forEach(a => a._calculatePosition());
