@@ -36,17 +36,16 @@ const ENDING_TEXT_STYLING = "12px 'Lilita One";
 const WIDTH_BARRIER = 5;
 const HEIGHT_BARRIER = 125;
 
+const MAX_SPEED_BALL = 10;
 const FRAME_SPEED_MS = 8;
 const APPLY_FRICTION_BOUNCE = true; 
-const STEP_DISTANCE_PX = 1;
 const HORIZONTAL_MOMENTUM = 3; 
-const MOVEMENT_TICKS = 10; 
+const MOVEMENT_TICKS = 5; 
 const GRAVITY = 0.08;
-const BALL_WEIGHT = 1.5;
 const INITAL_JUMP_VELOCITY = 6; 
 
 // Not all momentum is returned 
-const DUDE_FRICTION = 0.98;
+const DUDE_FRICTION = 0.96;
 const GROUND_FRICTION = -0.86; 
 const WALL_FRICTION = -1; 
 
@@ -81,8 +80,11 @@ class Ball {
 		this.vector.dy = momentum * y;
 		}
 
+		if (vector.dy > 0 ) {
+			this.vector.dy += 0.2 * vector.dy; 
+		}
+
 		this.vector.dx += 0.1 * vector.dx;
-		this.vector.dy += 0.1 * vector.dy; 
 
 		if (underneath) {
 			this.vector.dy = Math.abs(this.vector.dy) * -1;
@@ -91,7 +93,7 @@ class Ball {
 
 	_bounceWithDirection(direction) {
 		if (direction === DIRECTION.UP) {
-			this.vector.dy *= -1; 
+			this.vector.dy = Math.abs(this.vector.dy);
 		}
 
 		if (direction === DIRECTION.LEFT) {
@@ -108,6 +110,27 @@ class Ball {
 		this.context.arc(this.x, HEIGHT - this.y, this.radius, 0, 2 * Math.PI, false);
 		this.context.fillStyle = this.colour; 
 		this.context.fill();
+	}
+
+	_maxSpeedCheck() {
+		if (Math.abs(this.vector.dx) > MAX_SPEED_BALL) {
+			if (this.vector.dx > 0) {
+				this.vector.dx = MAX_SPEED_BALL;
+			}
+			else this.vector.dx = MAX_SPEED_BALL * -1;
+		}
+
+		if (Math.abs(this.vector.dy) > MAX_SPEED_BALL) {
+			if (this.vector.dy > 0) {
+				this.vector.dy = MAX_SPEED_BALL;
+			}
+			else this.vector.dy = MAX_SPEED_BALL * -1;
+		}
+
+		if (Math.abs(this.vector.dy + this.vector.dx)*1.5 > MAX_SPEED_BALL) {
+			this.vector.dy *= 0.8;
+			this.vector.dx *= 0.8;
+		}
 	}
 
 	_calculatePosition() {
@@ -132,6 +155,8 @@ class Ball {
 		if (this.vector.dy < 1 && this.vector.dy > 0)  {
 			this.vector.dy = 0;
 		}
+
+		this._maxSpeedCheck();
 
 		this.x += this.vector.dx;
 		this.y += this.vector.dy;
@@ -174,86 +199,75 @@ class Dude {
 	_drawDudeEye() {
 		this.context.beginPath();
 		if (this.isPlayer) {
-      	this.context.arc(this.state === DIRECTION.LEFT ? this.x - this.radius/3: this.x + this.radius/3, HEIGHT - this.radius/1.8- this.y, this.radius/9, 0, 2 * Math.PI, false);
+		//this.context.arc(this.state === DIRECTION.LEFT ? this.x - this.radius/3: this.x + this.radius/3, HEIGHT - this.radius/1.8- this.y, this.radius/9, 0, 2 * Math.PI, false);
+
+       this.context.arc(this.x + this.radius/3, HEIGHT - this.radius/1.8- this.y, this.radius/9, 0, 2 * Math.PI, false);
 		}
 		else{
-			this.context.arc(this.state === DIRECTION.RIGHT ? this.x + this.radius/3: this.x - this.radius/3, HEIGHT - this.radius/1.8- this.y, this.radius/9, 0, 2 * Math.PI, false);
+			this.context.arc(this.x - this.radius/3, HEIGHT - this.radius/1.8- this.y, this.radius/9, 0, 2 * Math.PI, false);
 
 		}
-		  this.context.fillStyle = '#000000';
+		this.context.fillStyle = '#000000';
       	this.context.fill();
 	}
 
-	_goDirection(direction) {
-		console.log("moving");
-
-		if (direction === DIRECTION.STOP) {
-			this.ticks = 0; 
-			return; 
-		}
+	_applyDirection(direction) {
 		if (this.state === direction) {
-			this.ticks += MOVEMENT_TICKS;
+			this.vector.dx *= 1.1;
 		}
 		else {
-			this.ticks = MOVEMENT_TICKS;
+			if (direction === DIRECTION.LEFT) {
+				this.vector.dx = HORIZONTAL_MOMENTUM * -1; 
+			}
+			else if (direction === DIRECTION.RIGHT) {
+				this.vector.dx = HORIZONTAL_MOMENTUM; 
+			}
+			else if (direction === DIRECTION.STOP) {
+				this.vector.dx = 0; 
+			}
 		}
 
 		this.state = direction; 
 	}
 
-	_callJump() {
-		this.jumpCall = true; 
+	
+	_calculatePosition() {
+		if (this.zombie) {
+			return; 
+		}
+
+		this.x += this.vector.dx;
+		this.y += this.vector.dy;
+
+		this._boundaryCheck();
+		this._applyGravity(); 
 	}
 
-	aiMove(ballx, bally) {
+	_callJump() {
+		this.jumpCall = true; 
+		if (this.vector.dy == 0 || this.y == 0) {
+			this.vector.dy = INITAL_JUMP_VELOCITY;
+		}
+	}
+
+	aiMove(ballx, bally, ballvector) {
 		let jump;
 		let direction; 
 
 		if (this.AI) {
-			direction = this.AI.decideDirection(ballx, bally, this.x, this.y);
-			jump = this.AI.decideJump(ballx, bally, this.x, this.y); 
+			direction = this.AI.decideDirection(ballx, bally, this.x, this.y, ballvector);
+			jump = this.AI.decideJump(ballx, bally, this.x, this.y, ballvector); 
 		}
 		if (jump) {
 			this._callJump();
 		}
 
 		if (direction) {
-			this._goDirection(direction);
+			this._applyDirection(direction);
 		}
 	}
 
-	_calculatePosition() {
-		if (this.zombie) {
-			return; 
-		}
-		if (this.state === DIRECTION.LEFT) {
-			if (this.vector.dy == 0) {
-				this.ticks -= 1;
-			}
-			this.vector.dx = -1 * HORIZONTAL_MOMENTUM;
-		}
-		else if (this.state === DIRECTION.RIGHT) {
-			if (this.vector.dy == 0) {
-				this.ticks -= 1;
-			}
-			this.vector.dx = 1 * HORIZONTAL_MOMENTUM;
-		}
-
-		if (this.ticks == 0) {
-			this.state = DIRECTION.STOP;
-			this.vector.dx = 0;
-		}
-
-		if (this.jumpCall) {
-			this.jumpCall = false; 
-			if (this.vector.dy == 0 || this.y == 0) {
-				this.vector.dy = INITAL_JUMP_VELOCITY;
-			} 
-		}
-
-		this.x += this.vector.dx;
-		this.y += this.vector.dy;
-
+	_boundaryCheck() {
 		if (this.isPlayer) {
 			if (this.x >= WIDTH/2 - this.radius) {
 				this.x = WIDTH/2 - this.radius;
@@ -270,7 +284,9 @@ class Dude {
 				this.x = WIDTH; 
 			}
 		}
+	}
 
+	_applyGravity() {	
 		if (this.y >= 0) {
 			this.vector.dy -= GRAVITY; 
 		}
@@ -281,13 +297,26 @@ class Dude {
 	}
 }
 
+
 class AI {
 	constructor() {
 		this.randomTicks = 100; 
 	}
 
-	decideJump(ballx, bally, dudex, dudey) {
+	decideJump(ballx, bally, dudex, dudey, ballvector) {
+		if (ballvector.dx <3) {
+			console.log(ballvector.dx);
+			return false; 
+		}
 		if (dudey != 0) {
+			return false;
+		}
+
+		if ((ballx - dudex < 10 || ballx - dudex > -10) && bally < 100) {
+			return true; 
+		} 
+
+		if (bally < 100 && ballx > WIDTH/2) {
 			return false;
 		}
 
@@ -296,17 +325,30 @@ class AI {
 		}
 	}
 
-	decideDirection(ballx, bally, dudex, dudey) {
-		console.log(ballx, WIDTH);
-
-		if (ballx-15 > dudex) {
+	decideDirection(ballx, bally, dudex, dudey, ballvector) {
+		if (ballvector.dx < 1 && ballx < WIDTH/2) {
+			return DIRECTION.STOP;
+		}
+		if (ballx + 10 > dudex) {
 			return DIRECTION.RIGHT;
 		}
-		else if (ballx < WIDTH/2) {
-			return this._goToDirection(dudex, WIDTH*4/5);
+		else if (ballx > WIDTH/2 && ballx -20 < dudex) {
+			return DIRECTION.LEFT;
 		}
-		else {
-			let direction = this._goToDirection(dudex, WIDTH*4/6);
+		else if (ballx < WIDTH*0.1) {
+			return this._goToDirection(dudex, WIDTH*0.6);
+		}
+		else if (ballx <WIDTH*0.2) {
+			return this._goToDirection(dudex, WIDTH*0.56);
+		}
+		else if (ballx <WIDTH*0.3) {
+			return this._goToDirection(dudex, WIDTH*0.6);
+		}
+		else if (ballx <WIDTH*0.4) {
+			return this._goToDirection(dudex, WIDTH*0.62);
+		}
+		else if (ballx < WIDTH/2) {
+			let direction = this._goToDirection(dudex, WIDTH*0.65);
 			return direction;
 		} 
 	}
@@ -324,7 +366,6 @@ class AI {
 	}
 
 	_randomMove() {
-
 		if (Math.random() > 0.11) {
 			return DIRECTION.STOP;
 		}
@@ -456,6 +497,14 @@ class Menu {
 			}
 		)
 
+		this.items.push(
+			{
+			'text' : 'MULTI PLAYER GAME',
+			'location' :0.7,
+			'active' : false
+			}
+		)
+
 		this._drawMenuItems();
 	}
 }
@@ -536,17 +585,21 @@ class Game {
 			let dude = this._dude();
 			let dude2 = this._dude2();
 			if (event.key === 'ArrowRight') {
-				dude._goDirection(DIRECTION.RIGHT);
+				dude._applyDirection(DIRECTION.RIGHT);
 			} else if (event.key === 'ArrowLeft') {
-				dude._goDirection(DIRECTION.LEFT);
+				dude._applyDirection(DIRECTION.LEFT);
 			} else if (event.key === 'ArrowUp') {
 				dude._callJump(); 
+			} else if (event.key === 'ArrowDown') {
+				dude._applyDirection(DIRECTION.STOP);
 			} else if (event.key === 'd' && this.mode === MODE.TWO_PLAYER_MODE) {
-				dude2._goDirection(DIRECTION.RIGHT);
+				dude2._applyDirection(DIRECTION.RIGHT);
 			} else if (event.key === 'w' && this.mode === MODE.TWO_PLAYER_MODE) {
 				dude2._callJump();
 			} else if (event.key === 'a' && this.mode === MODE.TWO_PLAYER_MODE) {
-				dude2._goDirection(DIRECTION.LEFT);
+				dude2._applyDirection(DIRECTION.LEFT);
+			} else if (event.key === 's' && this.mode === MODE.TWO_PLAYER_MODE) {
+				dude2._applyDirection(DIRECTION.STOP);		
 			} else if (event.key === 'Enter' && this.state === STATE.STOPPED) {
 				this._restartGame();
 			}
@@ -590,7 +643,7 @@ class Game {
 		this.IOConnection.transmit(dude);
 	}
 
-	_detectCollisionBallDudes() {
+	_detectCollisionBallDudes(withMovement) {
 		// Is based on a sphere dude
 
 		let dudes = []
@@ -606,11 +659,12 @@ class Game {
 	
 			if (distance < dude.radius + ball.radius) {
 				let underneath = false;
-				if (dx > ball.radius) {
+				if (dy > ball.radius) {
 					underneath = true; 
 				}
 				let dx2 = (dude.x - ball.x) / (dude.radius + ball.radius);
 				ball._bounce(dx2, dude.vector, underneath);
+				return true; 
 			}
 		}
 	}
@@ -620,26 +674,34 @@ class Game {
 		let obstacle = this._obstacle();
 
 		if (this._detectCollisionBarrier()) {
-
-			if (ball.y > obstacle.y) {
-				ball._bounceWithDirection(DIRECTION.UP);
+			if (ball.y + BALL_RADIUS > obstacle.y) {
+				ball._bounceWithDirection(DIRECTION.UP);	
+				return true; 
 			}
 
 			if (ball.x < obstacle.x) {
 				ball._bounceWithDirection(DIRECTION.LEFT);
+				return true; 
 			}
 
 			if (ball.x > obstacle.x) {
 				ball._bounceWithDirection(DIRECTION.RIGHT);
+				return true; 
 			}
 		}
 	}
 
 	_detectCollision() {
-		this._detectCollisionBallDudes();
-		this._detectCollisionBallObstacle();	
-}
-			
+		let col1 = this._detectCollisionBallDudes();
+
+		let col2 = this._detectCollisionBallObstacle();	
+		if(col1 && col2) {
+				this._ball()._bounceWithDirection(DIRECTION.UP);
+		}
+
+	}
+
+	
 	_calculateReflection() {
 		let dx = (this._dude().x - this._ball().x) / (this._dude().radius + this._ball().radius);
 		this._ball()._bounce(dx, this._dude().vector);
@@ -722,12 +784,11 @@ class Game {
 	run() {
 		this.gameRun = setInterval(() => {
 			this.state = STATE.RUNNING;
-			this._detectCollision();
+			this._detectCollision(true);
 
 			if (this.mode === MODE.ONE_PLAYER_MODE) {
-				let x = this._ball().x;
-				let y = this._ball().y;
-				this._dude2().aiMove(x,y);
+				let ball = this._ball();
+				this._dude2().aiMove(ball.x,ball.y,ball.vector);
 			}
 	
 			this.gameObjects.forEach(a => a._calculatePosition());
