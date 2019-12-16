@@ -4,6 +4,9 @@ const PORT = '3000'
 class IOConnection {
 
 	constructor() {
+	}
+
+	connect() {
 		this.socket = io.connect(IP_ADDRESS + ":" + PORT);
 		this.socket.on('connect', this.onConnect);
 		this.socket.on('message', this.onMessage);
