@@ -30,20 +30,20 @@ const HEIGHT = 700;
 const PARKINSON_PREVENTION = 5;
 
 const MENU_FONT = "50px 'Lilita One";
-const MENU_FONT_COLOUR = '#FFFF00'
+const MENU_FONT_COLOUR = '#09C60B';
 const MENU_FONT_COLOUR_ACTIVE = '#E116C0';
 
 const ENDING_TEXT_STYLING = "12px 'Lilita One";
 
 const WIDTH_BARRIER = 5;
-const HEIGHT_BARRIER = 120;
+const HEIGHT_BARRIER = 80;
 
-const MAX_SPEED_BALL = 16;
+const MAX_SPEED_BALL = 18;
 const FRAME_SPEED_MS = 8;
 const APPLY_FRICTION_BOUNCE = true; 
 const HORIZONTAL_MOMENTUM = 4;
 const MOVEMENT_TICKS = 5; 
-const GRAVITY = 0.08;
+const GRAVITY = 0.09;
 const INITAL_JUMP_VELOCITY = 6; 
 
 // Not all momentum is returned 
@@ -225,8 +225,8 @@ class Dude {
 		this.context.fill();
 	
 		this.context.beginPath();
-		this.context.moveTo(this.x - this.radius -3 , HEIGHT  - this.y);
-		this.context.lineTo(this.x + this.radius + 3, HEIGHT  - this.y);
+		this.context.moveTo(this.x - this.radius -3 , HEIGHT  - this.y - 1);
+		this.context.lineTo(this.x + this.radius + 3, HEIGHT  - this.y -1 	);
 		this.context.lineWidth = 3;
 		this.context.stroke();
 
@@ -486,109 +486,6 @@ class Obstacle {
 		this.context.fillStyle = this.colour; 
 		this.context.fillRect(this.x, this.y, this.width, this.height);
       	this.context.stroke();
-	}
-}
-
-class Menu {
-	constructor (context, ioConnection) {
-		this.ioConnection = ioConnection;
-		this.context = context; 
-		this.show = true; 
-		this.menuFont = MENU_FONT; 
-		this.items = [];
-		// because the font won't always load
-		setTimeout(() => this._openingVisual(), 1000);
-		this._setControls();
-
-	}
-
-	_drawMenuItems() {
-		this.context.clearRect(0, 0, WIDTH, HEIGHT);
-		this.context.font = MENU_FONT;
-
-		for (let i = 0; i < this.items.length; i++) {	
-			let item = this.items[i];
-			if (item.active) {
-				this.context.fillStyle = MENU_FONT_COLOUR_ACTIVE;
-			}
-			else {
-				this.context.fillStyle = MENU_FONT_COLOUR;
-			}
-	
-			this.context.fillText(item.text, WIDTH * 0.3, HEIGHT * item.location); 
-		}
-	}
-
-	_setControls() {
-		window.onkeydown = event => {
-			if (event.key === 'ArrowDown') {
-				this._changeActive(DIRECTION.UP)
-			} else if (event.key === 'ArrowUp') {
-				this._changeActive(DIRECTION.DOWN); 
-			} else if (event.key === 'Enter') {
-			this._startGame();
-			}
-		}
-	}
-
-	_startGame() {
-		// should be callback for gamerunner
-		let active = this.items.find(e => e.active);
-		let gameMode;
-		if (active.text === 'TWO PLAYER GAME') {
-			gameMode = MODE.TWO_PLAYER_MODE;
-		}
-		else {
-			gameMode = MODE.ONE_PLAYER_MODE;
-		}
-		let game = new Game(this.context, this.ioConnection, gameMode);
-		game.run();
-	}
-
-	_changeActive(direction) {
-		let active = this.items.find(e => e.active);
-		let index = this.items.indexOf(active);
-		this.items.forEach(e => e.active = false);
-
-		direction === DIRECTION.UP ? index +=1 : index -=1; 
-
-		if (index < 0) {
-			index = this.items.length-1;
-		}
-		if (index == this.items.length) {
-			index = 0;
-		}
-
-		this.items[index].active = true; 
-		this._drawMenuItems();
-		}
-
-	_openingVisual() { 
-		this.context.clearRect(0, 0, WIDTH, HEIGHT);
-		this.items.push(
-			{
-			'text' : 'SINGLE PLAYER GAME',
-			'location' : 0.3,
-			'active' :  true
-		  }
-		)
-		this.items.push(
-			{
-			'text' : 'TWO PLAYER GAME',
-			'location' :0.5,
-			'active' : false
-			}
-		)
-
-		this.items.push(
-			{
-			'text' : 'MULTI PLAYER GAME',
-			'location' :0.7,
-			'active' : false
-			}
-		)
-
-		this._drawMenuItems();
 	}
 }
 
