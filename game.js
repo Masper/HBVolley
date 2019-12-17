@@ -16,16 +16,18 @@ const STATE = {
 	STOPPED: 'STOPPED'
 }
 
-const BALL_RADIUS = 14;
-const DUDE_RADIUS = 65;
+const BALL_RADIUS = 16;
+const DUDE_RADIUS = 70;
 
 const BALL_COLOUR = '#FF5733'; 
 const DUDE_COLOUR = '#f9e711';
 const DEBUG_COLOUR = '#E116C0';
 const BARRIER_COLOUR = '#000000'; 
 
-const WIDTH = 1000;
-const HEIGHT = 600;
+const WIDTH = 1200;
+const HEIGHT = 700;
+
+const PARKINSON_PREVENTION = 5;
 
 const MENU_FONT = "50px 'Lilita One";
 const MENU_FONT_COLOUR = '#FFFF00'
@@ -33,21 +35,22 @@ const MENU_FONT_COLOUR_ACTIVE = '#E116C0';
 
 const ENDING_TEXT_STYLING = "12px 'Lilita One";
 
-const WIDTH_BARRIER = 10;
-const HEIGHT_BARRIER = 100;
+const WIDTH_BARRIER = 5;
+const HEIGHT_BARRIER = 120;
 
-const MAX_SPEED_BALL = 10;
+const MAX_SPEED_BALL = 16;
 const FRAME_SPEED_MS = 8;
 const APPLY_FRICTION_BOUNCE = true; 
 const HORIZONTAL_MOMENTUM = 4;
 const MOVEMENT_TICKS = 5; 
-const GRAVITY = 0.06;
-const INITAL_JUMP_VELOCITY = 4; 
+const GRAVITY = 0.08;
+const INITAL_JUMP_VELOCITY = 6; 
 
-// Not all momentum is returned -- for dude added?
-const DUDE_FRICTION = 1.0;
+// Not all momentum is returned 
+// wall: extra | dude: extra
+const DUDE_FRICTION = 0.95;
 const GROUND_FRICTION = -0.86; 
-const WALL_FRICTION = -1; 
+const WALL_FRICTION = -1.01
 
 class Ball {
 	constructor(context, x, y) {
@@ -81,7 +84,7 @@ class Ball {
 		}
 
 		if (vector.dy > 0 ) {
-			this.vector.dy += 3 * vector.dy; 
+			this.vector.dy += 1.5 * vector.dy; 
 		}
 
 		this.vector.dx += 1.2 * vector.dx;
@@ -117,6 +120,11 @@ class Ball {
 	}
 
 	_draw() {
+		this.context.beginPath();
+		this.context.arc(this.x, HEIGHT - this.y, this.radius +3, 0, 2 * Math.PI, false);
+		this.context.fillStyle = '#000000';
+		this.context.fill();
+
 		this.context.beginPath();
 		this.context.arc(this.x, HEIGHT - this.y, this.radius, 0, 2 * Math.PI, false);
 		this.context.fillStyle = this.colour; 
@@ -192,12 +200,12 @@ class Dude {
 
 	_initPlayer() {
 		this.colour = DUDE_COLOUR;
-		this.x = WIDTH * 1/3
+		this.x = 1*WIDTH/4
 	}
 
 	_initEnemy() {
 		this.colour = DEBUG_COLOUR; 
-		this.x = WIDTH * 2/3;
+		this.x = 3*WIDTH/4
 	}
 
 	giveAi(ai) {
@@ -205,10 +213,23 @@ class Dude {
 	}
 
 	_draw() {
+		  
 		this.context.beginPath();
-      	this.context.arc(this.x, HEIGHT - this.y, this.radius,  Math.PI, 2 * Math.PI, false);
+		this.context.arc(this.x, HEIGHT - this.y  , this.radius+3,  Math.PI, 2 * Math.PI, false);
+		this.context.fillStyle = '#000000';
+		this.context.fill();
+
+		this.context.beginPath();
+      	this.context.arc(this.x, HEIGHT - this.y, this.radius ,  Math.PI, 2 * Math.PI, false);
       	this.context.fillStyle = this.colour; 
-      	this.context.fill();
+		this.context.fill();
+	
+		this.context.beginPath();
+		this.context.moveTo(this.x - this.radius -3 , HEIGHT  - this.y);
+		this.context.lineTo(this.x + this.radius + 3, HEIGHT  - this.y);
+		this.context.lineWidth = 3;
+		this.context.stroke();
+
 		this._drawDudeEye();    
 	}
 
@@ -216,7 +237,7 @@ class Dude {
 		let k; 
 		this.isPlayer ? k = 1 : k = -1; 
 		this.context.beginPath();
-       	this.context.arc(this.x + k * this.radius/3, HEIGHT - this.radius/1.8 - this.y, this.radius/7, 0, 2 * Math.PI, false);
+       	this.context.arc(this.x + k * this.radius/3, HEIGHT - this.radius/1.8 - this.y, this.radius/6.9, 0, 2 * Math.PI, false);
 		this.context.fillStyle = '#000000';
 		this.context.fill();
 		this._drawInnereye();
@@ -250,6 +271,7 @@ class Dude {
 		let k; 
 		this.isPlayer ? k = 1 : k = -1; 
 
+		// white
 		this.context.beginPath();
 		this.context.arc(this.x + k * this.radius/3, HEIGHT - this.radius/1.8- this.y, this.radius/8, 0, 2 * Math.PI, false);
 		this.context.fillStyle = '#E4EBEC';
@@ -257,12 +279,14 @@ class Dude {
 
 		this.context.beginPath();
 
-		this.context.arc(this.x +  this.amtlookright + k * this.radius/3, HEIGHT - this.radius/1.8- this.y - this.amtlookup, this.radius/17, 0, 2 * Math.PI, false);
+		// blue
+		this.context.arc(this.x + this.amtlookright + k * this.radius/3, HEIGHT - this.radius/1.8- this.y - this.amtlookup, this.radius/17, 0, 2 * Math.PI, false);
 		this.context.fillStyle = '#11D0F2';
 		this.context.fill();
 
+		// black
 		this.context.beginPath();
-		this.context.arc(this.x +  this.amtlookright + k * this.radius/3, HEIGHT - this.radius/1.8- this.y - this.amtlookup, this.radius/26 * this.dilation, 0, 2 * Math.PI, false);
+		this.context.arc(this.x + this.amtlookright + k * this.radius/3, HEIGHT - this.radius/1.8- this.y - this.amtlookup, this.radius/26 * this.dilation, 0, 2 * Math.PI, false);
 		this.context.fillStyle = '#000000';
 		this.context.fill();
 	}
@@ -351,6 +375,8 @@ class Dude {
 class AI {
 	constructor() {
 		this.randomTicks = 100; 
+		this.lastMovement; 
+		this.ticks = PARKINSON_PREVENTION;
 	}
 
 	decideJump(ballx, bally, dudex, dudey, ballvector) {
@@ -373,7 +399,16 @@ class AI {
 		}
 	}
 
+
+
 	decideDirection(ballx, bally, dudex, dudey, ballvector) {
+		this.ticks--;
+		if (this.ticks > 0) {
+			return; 
+		}
+		
+		this.ticks = PARKINSON_PREVENTION;
+
 		if (ballvector.dx < 1 && ballx < WIDTH/2) {
 			return DIRECTION.STOP;
 		}
@@ -402,16 +437,16 @@ class AI {
 	}
 
 	_goToDirection(dudex, x) {
-		if (x  > dudex) {
-			return DIRECTION.RIGHT;
+			if (x  > dudex) {
+				return DIRECTION.RIGHT;
+			}
+			else if (x == dudex) {
+				return DIRECTION.STOP;
+			}
+			else {
+				return DIRECTION.LEFT; 
+			}
 		}
-		else if (x == dudex) {
-			return DIRECTION.STOP;
-		}
-		else {
-			return DIRECTION.LEFT; 
-		}
-	}
 
 	_randomMove() {
 		if (Math.random() > 0.11) {
@@ -562,7 +597,6 @@ class GameRunner {
 		this._initCanvas();
 		// reference to IO because no callback yet
 		this.menu = new Menu(this.context, ioConnection);
-		//this.game = new Game(this.context, ioConnection); 
 	}
 
 	_initCanvas() {
@@ -605,7 +639,13 @@ class Game {
 
 	_initGameObjects() {
 		this.gameObjects = [];
-		this.gameObjects.push(new Ball(this.context, 250, 500));
+		if (this.lastScorer) {
+		this.gameObjects.push(new Ball(this.context, 3*WIDTH/4, HEIGHT*0.8));
+		}
+		else {
+			this.gameObjects.push(new Ball(this.context, 1*WIDTH/4, HEIGHT*0.8));
+
+		}
 		this.gameObjects.push(new Dude(this.context, true));
 		this.gameObjects.push(new Obstacle(this.context));
 		this.gameObjects.push(new Dude(this.context, false))
@@ -713,6 +753,7 @@ class Game {
 				dude.dilation = 1; 
 			}
 
+
 			if (dx > 10) {
 				dude.amtlookright = -2;
 			}
@@ -723,17 +764,25 @@ class Game {
 				dude.amtlookright = 2;
 			}
 
-			if (dy > 10) {
-				dude.amtlookup = -2;
+			if (dy < -400 ) {
+				dude.amtlookup = 2;
 			}
-			if (dy < 10 && dy > -10) {
-				dude.amtlookup = 0
+			else if (dy < -200) {
+				dude.amtlookup = 1;
 			}
-			else {
-				dude.amtlookup = 2; 
+			else if (dy < -20) {
+				dude.amtlookup =  0;
+			}
+			else if (dy < 0) {
+				dude.amtlookup = -1; 
+			}
+			else if (dy < 50) {
+				dude.amtlookup = -2; 
+			}
+			else  {
+				dude.amtlookup = -3;
 			}
 
-	
 			if (distance < dude.radius + ball.radius) {
 				let underneath = false;
 				if (dy > ball.radius) {
@@ -778,7 +827,6 @@ class Game {
 
 	}
 
-	
 	_calculateReflection() {
 		let dx = (this._dude().x - this._ball().x) / (this._dude().radius + this._ball().radius);
 		this._ball()._bounce(dx, this._dude().vector);
@@ -795,7 +843,7 @@ class Game {
 	}
 
 	_nextPoint() {
-		this._initGameObjects();
+			this._initGameObjects();
 	}
 
 	_detectEnding() {
@@ -812,16 +860,23 @@ class Game {
 	_restartGame() { 
 		this._initGameObjects();
 		this._resetScore();
-		this.run();
+		this.run()
 	}
 
 	_resetScore() {
 		this.score.left = 0;
 		this.score.right = 0;
+		this.lastScorer = null; 
 	}
 
 	_updateScore() {
-		this._ball().x < WIDTH/2 ? this.score.right++ : this.score.left++;
+		if (this._ball().x < WIDTH/2) {
+			this.score.right++;
+			this.lastScorer = 0; 
+		} else {
+			this.score.left++;
+			this.lastScorer = 1; 
+		}
 
 		if (this.score.left < 3 && this.score.right < 3) {
 			return true; 
@@ -847,7 +902,7 @@ class Game {
 		}
 
 		this.context.fillText(text + " dude WINS!", WIDTH * 0.25, HEIGHT * 0.4); 
-		this.context.fillText("enter for restart...", WIDTH * 0.3, HEIGHT * 0.6);
+		this.context.fillText("Press [enter] for restart", WIDTH * 0.3, HEIGHT * 0.6);
 
 		this.stop();
 	}
