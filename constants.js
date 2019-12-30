@@ -1,0 +1,50 @@
+const DIRECTION = {
+	LEFT: 'LEFT',
+	RIGHT: 'RIGHT',
+	STOP: 'STOP',
+	UP: 'UP'
+};
+
+const MODE = {
+	ONE_PLAYER_MODE: 'ONE_PLAYER_MODE',
+	TWO_PLAYER_MODE: 'TWO_PLAYER_MODE',
+	MULTI_PLAYER_MODE: 'MULTI_PLAYER_MODE'
+}
+
+const STATE = {
+	RUNNING: 'RUNNING',
+	STOPPED: 'STOPPED'
+}
+
+const BALL_RADIUS = 25;
+const DUDE_RADIUS = 65;
+
+const BALL_COLOUR = '#FF5733'; 
+const DUDE_COLOUR = '#f9e711';
+const DEBUG_COLOUR = '#E116C0';
+const BARRIER_COLOUR = '#000000'; 
+
+const WIDTH = 1200;
+const HEIGHT = 700;
+
+const PARKINSON_PREVENTION = 5;
+
+const MENU_FONT = "50px 'Lilita One";
+const MENU_FONT_COLOUR = '#09C60B';
+const MENU_FONT_COLOUR_ACTIVE = '#E116C0';
+
+const ENDING_TEXT_STYLING = "12px 'Lilita One";
+
+const WIDTH_BARRIER = 5;
+const HEIGHT_BARRIER = 75;
+
+const MAX_SPEED_BALL = 18;
+const FRAME_SPEED_MS = 8;
+const APPLY_FRICTION_BOUNCE = true; 
+const HORIZONTAL_MOMENTUM = 4;
+const GRAVITY = 0.09;
+const INITAL_JUMP_VELOCITY = 6; 
+
+const DUDE_FRICTION = 0.92;
+const GROUND_FRICTION = -0.86; 
+const WALL_FRICTION = -1.01

@@ -65,6 +65,7 @@ class Menu {
         }
 
         if (active.action == MODE.MULTI_PLAYER_MODE) {
+            this.ioConnection.connect(); 
             this._multiMenu();
             this._drawMenuItems();
             this._drawDudesWaiting(); 
@@ -75,9 +76,22 @@ class Menu {
         }
 
         if (active.action == ACTION.SUBSCRIBE) {
+            this.ioConnection.getRoom(1, this._callBackRoom);
             this._subscribe(active);
         }
     }
+
+    _callBackRoom(thing) {
+        console.log(thing);
+        this.ioConnection.sendReady(this._call2);
+        
+    }
+
+    _call2(thing) {
+        console.log(thing);
+    }
+
+
 
     _subscribe(item) {
         item.isSubscribed = !item.isSubscribed;
@@ -89,7 +103,6 @@ class Menu {
     }
 
     _drawDudesWaiting() { 
-
         for (let i = 0; i < this.items.length; i++)  {
         let item = this.items[i];
 
@@ -197,6 +210,8 @@ class Menu {
             }
         );
 
+        /*
+
         this.items.push( 
             {
                 'text': 'ROOM 2',
@@ -218,10 +233,11 @@ class Menu {
                 'room' : 3
             }
         );
+        */
 
         this.items.push (
             {
-                'text': '⇐  ⇐  ⇐',
+                'text': 'GO BACK',
                 'action': ACTION.GO_BACK,
                 'location' : LOCATION._4,
                 'active' : false, 

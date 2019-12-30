@@ -1,494 +1,3 @@
-const DIRECTION = {
-	LEFT: 'LEFT',
-	RIGHT: 'RIGHT',
-	STOP: 'STOP',
-	UP: 'UP'
-};
-
-const MODE = {
-	ONE_PLAYER_MODE: 'ONE_PLAYER_MODE',
-	TWO_PLAYER_MODE: 'TWO_PLAYER_MODE',
-	MULTI_PLAYER_MODE: 'MULTI_PLAYER_MODE'
-}
-
-const STATE = {
-	RUNNING: 'RUNNING',
-	STOPPED: 'STOPPED'
-}
-
-const BALL_RADIUS = 16;
-const DUDE_RADIUS = 70;
-
-const BALL_COLOUR = '#FF5733'; 
-const DUDE_COLOUR = '#f9e711';
-const DEBUG_COLOUR = '#E116C0';
-const BARRIER_COLOUR = '#000000'; 
-
-const WIDTH = 1200;
-const HEIGHT = 700;
-
-const PARKINSON_PREVENTION = 5;
-
-const MENU_FONT = "50px 'Lilita One";
-const MENU_FONT_COLOUR = '#09C60B';
-const MENU_FONT_COLOUR_ACTIVE = '#E116C0';
-
-const ENDING_TEXT_STYLING = "12px 'Lilita One";
-
-const WIDTH_BARRIER = 5;
-const HEIGHT_BARRIER = 80;
-
-const MAX_SPEED_BALL = 18;
-const FRAME_SPEED_MS = 8;
-const APPLY_FRICTION_BOUNCE = true; 
-const HORIZONTAL_MOMENTUM = 4;
-const MOVEMENT_TICKS = 5; 
-const GRAVITY = 0.09;
-const INITAL_JUMP_VELOCITY = 6; 
-
-// Not all momentum is returned 
-// wall: extra | dude: extra
-const DUDE_FRICTION = 0.95;
-const GROUND_FRICTION = -0.86; 
-const WALL_FRICTION = -1.01
-
-class Ball {
-	constructor(context, x, y) {
-		this.x = x;
-		this.y = y;
-		this.context = context; 
-		this.colour = BALL_COLOUR;
-		this.radius = BALL_RADIUS; 
-		this.vector = {dx: 0, dy:0};
-		this._draw();
-		this.hitGround = 0;
-	}
-	
-	_bounce(x, vector, underneath) {
-		let y = 1+x;
-
-		if (x > 0 ) {
-			y = 1-x;
-		}
-
-		let momentum = Math.abs(this.vector.dx) + Math.abs(this.vector.dy); 
-
-		if (APPLY_FRICTION_BOUNCE) {
-			this.vector.dx = momentum * -x * DUDE_FRICTION;
-			this.vector.dy = momentum * y * DUDE_FRICTION;
-		}
-		else {
-		// No friction applied here
-		this.vector.dx = momentum * -x;
-		this.vector.dy = momentum * y;
-		}
-
-		if (vector.dy > 0 ) {
-			this.vector.dy += 1.5 * vector.dy; 
-		}
-
-		this.vector.dx += 1.2 * vector.dx;
-
-		if (underneath) {
-			this.vector.dy = Math.abs(this.vector.dy) * -1;
-		}
-
-		// accelerate ball more when speeds close together 
-		if (vector.y > 0 && vector.y > this.vector.dy + 5 && !underneath) {
-			this.vector.dy += 5;
-		}
-		if (vector.x > 0 && vector.x > this.vector.dx + 5 ) {
-			this.vector.dx += 5;
-		}
-		if (vector.x < 0 && vector.x  < this.vector.dx - 5 ) {
-			this.vector.dx += 5; 
-		}
-	}
-
-	_bounceWithDirection(direction) {
-		if (direction === DIRECTION.UP) {
-			this.vector.dy = Math.abs(this.vector.dy);
-		}
-
-		if (direction === DIRECTION.LEFT) {
-			this.vector.dx = Math.abs(this.vector.dx)*-1;
-		}
-
-		if (direction === DIRECTION.RIGHT) {
-			this.vector.dx = Math.abs(this.vector.dx);
-		}
-	}
-
-	_draw() {
-		this.context.beginPath();
-		this.context.arc(this.x, HEIGHT - this.y, this.radius +3, 0, 2 * Math.PI, false);
-		this.context.fillStyle = '#000000';
-		this.context.fill();
-
-		this.context.beginPath();
-		this.context.arc(this.x, HEIGHT - this.y, this.radius, 0, 2 * Math.PI, false);
-		this.context.fillStyle = this.colour; 
-		this.context.fill();
-	}
-
-	_maxSpeedCheck() {
-		if (Math.abs(this.vector.dx) > MAX_SPEED_BALL) {
-			if (this.vector.dx > 0) {
-				this.vector.dx = MAX_SPEED_BALL;
-			}
-			else this.vector.dx = MAX_SPEED_BALL * -1;
-		}
-
-		if (Math.abs(this.vector.dy) > MAX_SPEED_BALL) {
-			if (this.vector.dy > 0) {
-				this.vector.dy = MAX_SPEED_BALL;
-			}
-			else this.vector.dy = MAX_SPEED_BALL * -1;
-		}
-
-		if ((Math.abs(this.vector.dy)+ Math.abs(this.vector.dx))*1.5 > MAX_SPEED_BALL) {
-			this.vector.dy *= 0.8;
-			this.vector.dx *= 0.8;
-		}
-	}
-
-	_calculatePosition() {
-		if (this.x <= this.radius / 2) {
-			this.x = this.radius / 2;
-			this.vector.dx *= WALL_FRICTION;
-		}
-
-		if (this.x > WIDTH - this.radius/2) {
-			this.x = WIDTH - this.radius/2;
-			this.vector.dx *= WALL_FRICTION;
-		} 
-
-		if (this.y <= this.radius ) {
-			this.hitGround += 1; 
-			this.y = this.radius ;
-			this.vector.dy *= GROUND_FRICTION;
-			this.vector.dx *= -1 * GROUND_FRICTION;
-		}
-
-		// Dampen the bouncing on the floor (not applicable for game)
-		if (this.vector.dy < 1 && this.vector.dy > 0)  {
-			this.vector.dy = 0;
-		}
-
-		this._maxSpeedCheck();
-
-		this.x += this.vector.dx;
-		this.y += this.vector.dy;
-		this.vector.dy -= GRAVITY; 
-	}	
-}
-
-class Dude {
-	constructor(context, isPlayer) {
-		this.isPlayer = isPlayer; 
-		isPlayer ? this._initPlayer() : this._initEnemy();	
-		this.vector = {dx: 0, dy:0};
-		this.context = context;
-		this.radius = DUDE_RADIUS;
-		this.speedUp = 0;
-		this._draw();
-		this.amtlookup;
-		this.amtlookright; 
-		this.dilation = 1; 
-		this.blink = 0;
-	}
-
-	_initPlayer() {
-		this.colour = DUDE_COLOUR;
-		this.x = 1*WIDTH/4
-	}
-
-	_initEnemy() {
-		this.colour = DEBUG_COLOUR; 
-		this.x = 3*WIDTH/4
-	}
-
-	giveAi(ai) {
-		this.AI = ai;
-	}
-
-	_draw() {
-		  
-		this.context.beginPath();
-		this.context.arc(this.x, HEIGHT - this.y  , this.radius+3,  Math.PI, 2 * Math.PI, false);
-		this.context.fillStyle = '#000000';
-		this.context.fill();
-
-		this.context.beginPath();
-      	this.context.arc(this.x, HEIGHT - this.y, this.radius ,  Math.PI, 2 * Math.PI, false);
-      	this.context.fillStyle = this.colour; 
-		this.context.fill();
-	
-		this.context.beginPath();
-		this.context.moveTo(this.x - this.radius -3 , HEIGHT  - this.y - 1);
-		this.context.lineTo(this.x + this.radius + 3, HEIGHT  - this.y -1 	);
-		this.context.lineWidth = 3;
-		this.context.stroke();
-
-		this._drawDudeEye();    
-	}
-
-	_drawDudeEye() {
-		let k; 
-		this.isPlayer ? k = 1 : k = -1; 
-		this.context.beginPath();
-       	this.context.arc(this.x + k * this.radius/3, HEIGHT - this.radius/1.8 - this.y, this.radius/6.9, 0, 2 * Math.PI, false);
-		this.context.fillStyle = '#000000';
-		this.context.fill();
-		this._drawInnereye();
-		this._drawBlink();
-	}
-
-	_drawBlink() {
-		if (this.blink == 0) {
-			let a = Math.random();
-			if (a < 0.001) {
-				this.blink = 0.01;
-				return;  			
-			}
-		}
-
-		if (this.blink < 25 && this.blink > 0) {
-			this.blink += 1.5; 
-			let k; 
-			this.isPlayer ? k = 1 : k = -1;
-			this.context.beginPath();
-			this.context.rect(this.x + k * this.radius/5.9,	HEIGHT - this.radius/1.4 - this.y, k * 30, this.blink);
-			this.context.fillStyle = this.colour; 
-			this.context.fill();
-		}
-		if (this.blink >= 25 ) {
-			this.blink = 0; 
-		}
-	}
-
-	_drawInnereye() {
-		let k; 
-		this.isPlayer ? k = 1 : k = -1; 
-
-		// white
-		this.context.beginPath();
-		this.context.arc(this.x + k * this.radius/3, HEIGHT - this.radius/1.8- this.y, this.radius/8, 0, 2 * Math.PI, false);
-		this.context.fillStyle = '#E4EBEC';
-		this.context.fill();
-
-		this.context.beginPath();
-
-		// blue
-		this.context.arc(this.x + this.amtlookright + k * this.radius/3, HEIGHT - this.radius/1.8- this.y - this.amtlookup, this.radius/17, 0, 2 * Math.PI, false);
-		this.context.fillStyle = '#11D0F2';
-		this.context.fill();
-
-		// black
-		this.context.beginPath();
-		this.context.arc(this.x + this.amtlookright + k * this.radius/3, HEIGHT - this.radius/1.8- this.y - this.amtlookup, this.radius/26 * this.dilation, 0, 2 * Math.PI, false);
-		this.context.fillStyle = '#000000';
-		this.context.fill();
-	}
-
-	_applyDirection(direction) {
-			if (direction === DIRECTION.LEFT) {
-				this.vector.dx = HORIZONTAL_MOMENTUM * -1; 
-			}
-			else if (direction === DIRECTION.RIGHT) {
-				this.vector.dx = HORIZONTAL_MOMENTUM; 
-			}
-			else if (direction === DIRECTION.STOP) {
-				this.vector.dx = 0; 
-			}
-		this.state = direction; 
-	}
-
-	
-	_calculatePosition() {
-		if (this.zombie) {
-			return; 
-		}
-
-		this.x += this.vector.dx;
-		this.y += this.vector.dy;
-
-		this._boundaryCheck();
-		this._applyGravity(); 
-	}
-
-	_callJump() {
-		this.jumpCall = true; 
-		if (this.vector.dy == 0 || this.y == 0) {
-			this.vector.dy = INITAL_JUMP_VELOCITY;
-		}
-	}
-
-	aiMove(ballx, bally, ballvector) {
-		let jump;
-		let direction; 
-
-		if (this.AI) {
-			direction = this.AI.decideDirection(ballx, bally, this.x, this.y, ballvector);
-			jump = this.AI.decideJump(ballx, bally, this.x, this.y, ballvector); 
-		}
-		if (jump) {
-			this._callJump();
-		}
-
-		if (direction) {
-			this._applyDirection(direction);
-		}
-	}
-
-	_boundaryCheck() {
-		if (this.isPlayer) {
-			if (this.x >= WIDTH/2 - this.radius) {
-				this.x = WIDTH/2 - this.radius;
-			}
-			if (this.x <= 0) {
-				this.x = 0; 
-			}
-		}
-		else {
-			if (this.x <= WIDTH/2 + this.radius + WIDTH_BARRIER) {
-				this.x = WIDTH/2 + this.radius + WIDTH_BARRIER;
-			}
-			if (this.x >= WIDTH) {
-				this.x = WIDTH; 
-			}
-		}
-	}
-
-	_applyGravity() {	
-		if (this.y >= 0) {
-			this.vector.dy -= GRAVITY; 
-		}
-		else {
-			this.vector.dy = 0; 
-			this.y = 0;
-		}
-	}
-}
-
-
-class AI {
-	constructor() {
-		this.randomTicks = 100; 
-		this.lastMovement; 
-		this.ticks = PARKINSON_PREVENTION;
-	}
-
-	decideJump(ballx, bally, dudex, dudey, ballvector) {
-		if (dudey != 0) {
-			return false;
-		}
-		if (ballvector.dx <5 && ballx < WIDTH/2) {
-			return false
-		}
-		if ((ballx - dudex < 10 || ballx - dudex > -10) && bally < 100) {
-			return true; 
-		} 
-
-		if (bally < 100 && ballx > WIDTH/2) {
-			return false;
-		}
-
-		if (ballx > WIDTH / 2 -50) {
-			return true; 
-		}
-	}
-
-
-
-	decideDirection(ballx, bally, dudex, dudey, ballvector) {
-		this.ticks--;
-		if (this.ticks > 0) {
-			return; 
-		}
-		
-		this.ticks = PARKINSON_PREVENTION;
-
-		if (ballvector.dx < 1 && ballx < WIDTH/2) {
-			return DIRECTION.STOP;
-		}
-		if (ballx + 10 > dudex) {
-			return DIRECTION.RIGHT;
-		}
-		else if (ballx > WIDTH/2 && ballx -20 < dudex) {
-			return DIRECTION.LEFT;
-		}
-		else if (ballx < WIDTH*0.1) {
-			return this._goToDirection(dudex, WIDTH*0.6);
-		}
-		else if (ballx <WIDTH*0.2) {
-			return this._goToDirection(dudex, WIDTH*0.56);
-		}
-		else if (ballx <WIDTH*0.3) {
-			return this._goToDirection(dudex, WIDTH*0.6);
-		}
-		else if (ballx <WIDTH*0.4) {
-			return this._goToDirection(dudex, WIDTH*0.62);
-		}
-		else if (ballx < WIDTH/2) {
-			let direction = this._goToDirection(dudex, WIDTH*0.65);
-			return direction;
-		} 
-	}
-
-	_goToDirection(dudex, x) {
-			if (x  > dudex) {
-				return DIRECTION.RIGHT;
-			}
-			else if (x == dudex) {
-				return DIRECTION.STOP;
-			}
-			else {
-				return DIRECTION.LEFT; 
-			}
-		}
-
-	_randomMove() {
-		if (Math.random() > 0.11) {
-			return DIRECTION.STOP;
-		}
-		else if (Math.random() > 0.02) {
-			return DIRECTION.LEFT;
-		}
-		else return DIRECTION.RIGHT;
-	}
-
-	_returnMid(dudex, dudey) {
-		if (dudex < 2/3* WIDTH) {
-			return DIRECTION.RIGHT;
-		}
-		if (dudex > 3/4* WIDTH) {
-			return DIRECTION.LEFT; 
-		}
-	}
-}
-
-class Obstacle {
-	constructor(context) {
-		this.x = WIDTH/2;
-		this.y = HEIGHT - HEIGHT_BARRIER;
-		this.height = HEIGHT_BARRIER; 
-		this.width = WIDTH_BARRIER;
-		this.context = context;
-		this.colour = BARRIER_COLOUR; 
-	}
-
-	_calculatePosition() {
-	}
-
-	_draw() {
-		this.context.beginPath();
-		this.context.fillStyle = this.colour; 
-		this.context.fillRect(this.x, this.y, this.width, this.height);
-      	this.context.stroke();
-	}
-}
-
 class GameRunner {	
 	constructor(ioConnection) {
 		this._initCanvas();
@@ -505,70 +14,65 @@ class GameRunner {
 
 	run() {
 	}
-
 }
 
 class Game {
 	constructor(context, IOConnection, gameMode) {
-		this.mode = gameMode; 
 		this.context = context; 
-		this.menu = new Menu(this.context);
-		this.receivingTransmission = false;
-		this.score = {'left' : 0,
-					'right' : 0};
-		this._addIOConnection(IOConnection); 
-		this._initGameObjects() 
+		this.mode = gameMode; 
+		this._initIO(IOConnection); 
+		this._initGameObjects();
+		this.score = {'left' : 0, 'right' : 0};
 		this._setControls();
 	}
 
-	_addIOConnection(IOConnection) {
+	run() {
+		this.gameRun = setInterval(() => {
+			this.state = STATE.RUNNING;
+			this._detectCollision();
+
+			if (this.mode === MODE.ONE_PLAYER_MODE) {
+				let ball = this.gameObjects.ball;
+				this.gameObjects.dude2.aiMove(ball.x,ball.y,ball.vector);
+			}
+
+			this.calculatePositions();
+
+			if (this.IOConnection && this.mode === MODE.MULTI_PLAYER_MODE) {
+				this._transmitStatesBallAndDude(); 
+				this._receiveStateDude2();	
+			}
+
+			this.drawGameState(); 		
+
+		}, FRAME_SPEED_MS);
+	}
+
+	_initIO(IOConnection) {
 		this.IOConnection = IOConnection;
 		this.receivingTransmission = true;
 	}
 
 	_initiateAi() {
 		if (this.mode === MODE.ONE_PLAYER_MODE) {
-			let dude = this._dude2();
-			dude.giveAi(new AI());
-			console.log("ai-added");
+			this.gameObjects.dude2.blessWithAi(new AI());
 		}
 	}
 
 	_initGameObjects() {
-		this.gameObjects = [];
-		if (this.lastScorer) {
-		this.gameObjects.push(new Ball(this.context, 3*WIDTH/4, HEIGHT*0.8));
-		}
-		else {
-			this.gameObjects.push(new Ball(this.context, 1*WIDTH/4, HEIGHT*0.8));
+		this.gameObjects = {};
+		this.gameObjects.ball = new Ball(this.context, WIDTH/4, HEIGHT*0.8);
+		this.gameObjects.dude1 = new Dude(this.context, true);
+		this.gameObjects.dude2 = new Dude(this.context, false);
+		this.gameObjects.obstacle = new Obstacle(this.context);
 
-		}
-		this.gameObjects.push(new Dude(this.context, true));
-		this.gameObjects.push(new Obstacle(this.context));
-		this.gameObjects.push(new Dude(this.context, false))
 		this._initiateAi();
-	}
-
-	_dude2() {
-		return this.gameObjects[3];
-	}
-
-	_dude() {
-		return this.gameObjects[1];
-	}
-
-	_ball() {
-		return this.gameObjects[0];
-	}
-
-	_obstacle() {
-		return this.gameObjects[2];
 	}
 
 	_setControls() {
 		window.onkeydown = event => {
-			let dude = this._dude();
-			let dude2 = this._dude2();
+			let dude = this.gameObjects.dude1;
+			let dude2 = this.gameObjects.dude2;
 			if (event.key === 'ArrowRight') {
 				dude._applyDirection(DIRECTION.RIGHT);
 			} else if (event.key === 'ArrowLeft') {
@@ -592,18 +96,17 @@ class Game {
 	}
 
 	_detectCollisionBarrier() {
-		// Le copy-paste stack
-
 		let circle={
-			x:this._ball().x,
-			y:this._ball().y,
-			r:this._ball().radius
+			x:this.gameObjects.ball.x,
+			y:this.gameObjects.ball.y,
+			r:this.gameObjects.ball.radius
 		}
+		
 		let rect={
-			x:this._obstacle().x,
+			x:this.gameObjects.obstacle.x,
 			y:0,
-			w:this._obstacle().width,
-			h:this._obstacle().height
+			w:this.gameObjects.obstacle.width,
+			h:this.gameObjects.obstacle.height
 		}
 
 		if(circle.x >= (rect.x - circle.r) && circle.x <= (rect.x + rect.w + circle.r) && circle.y >=  (rect.y - circle.r) && circle.y <= rect.y + rect.h + circle.r) {
@@ -614,28 +117,85 @@ class Game {
 	_transmitStatesBallAndDude() {
 		let ball = {
 			"name" : 'ball',
-			"x" : this._ball().x,
-			"y" : this._ball().y
+			"x" : this.gameObjects.ball.x,
+			"y" : this.gameObjects.ball.y
 		}
 
 		let dude = {
 			"name" : "dude",
-			"x" : this._dude().x,
-			"y" : this._dude().y
+			"x" : this.gameObjects.dude1.x,
+			"y" : this.gameObjects.dude1.y
 		}
 
 		this.IOConnection.transmit(ball);
 		this.IOConnection.transmit(dude);
 	}
 
-	_detectCollisionBallDudes() {
-		// Is based on a sphere dude
-		// underneath is workaround = bal is underneath
+	_setEyeVisual(dude, dx, dy, distance) 	{
+		if (distance > 355 ) {
+		dude.dilation = 1.15; 
+		}
+		else if (distance > 10) {
+			dude.dilation = 0.95; 
+		}
+		else {
+			dude.dilation = 1.10;
+		}
 
+	if (dx < -400 ) {
+			dude.amtlookright = 4;
+		}
+		if (dx < -300 ) {
+			dude.amtlookright = 3;
+		}
+		else if (dx < -200) {
+			dude.amtlookright = 2;
+		}
+		else if (dx < -20) {
+			dude.amtlookright =  1;
+		}
+		else if (dx < 0) {
+			dude.amtlookright = 0; 
+		}
+		else if (dx < 100) {
+			dude.amtlookright = -1; 
+		}
+		else if (dx < 200) {
+			dude.amtlookright = -2; 
+		}
+		else  {
+			dude.amtlookright = -3;
+		}
+
+		if (dy < -400 ) {
+			dude.amtlookup = 4;
+		}
+		if (dy < -300 ) {
+			dude.amtlookup = 3;
+		}
+		else if (dy < -200) {
+			dude.amtlookup = 2;
+		}
+		else if (dy < -20) {
+			dude.amtlookup =  1;
+		}
+		else if (dy < 0) {
+			dude.amtlookup = 0; 
+		}
+		else if (dy < 25) {
+			dude.amtlookup = -1; 
+		}
+		else  {
+			dude.amtlookup = -2;
+		}
+
+	}
+
+	_detectCollisionBallDudes() {
 		let dudes = []
-		dudes.push(this._dude());
-		dudes.push(this._dude2());
-		let ball = this._ball(); 
+		dudes.push(this.gameObjects.dude1);
+		dudes.push(this.gameObjects.dude2);
+		let ball = this.gameObjects.ball; 
 
 		for (let i = 0; i<dudes.length; i++) {	
 			let dude = dudes[i];
@@ -643,42 +203,7 @@ class Game {
 			let dy = dude.y - ball.y;
 			let distance = Math.sqrt(dx * dx + dy * dy);
 
-			if (distance > 355 ) {
-				dude.dilation = 1.15; 
-			}
-			else {
-				dude.dilation = 1; 
-			}
-
-
-			if (dx > 10) {
-				dude.amtlookright = -2;
-			}
-			else if (dx < 10 && dx > -10) {
-				dude.amtlookright = 0;
-			}
-			else {
-				dude.amtlookright = 2;
-			}
-
-			if (dy < -400 ) {
-				dude.amtlookup = 2;
-			}
-			else if (dy < -200) {
-				dude.amtlookup = 1;
-			}
-			else if (dy < -20) {
-				dude.amtlookup =  0;
-			}
-			else if (dy < 0) {
-				dude.amtlookup = -1; 
-			}
-			else if (dy < 50) {
-				dude.amtlookup = -2; 
-			}
-			else  {
-				dude.amtlookup = -3;
-			}
+			this._setEyeVisual(dude, dx, dy, distance);		
 
 			if (distance < dude.radius + ball.radius) {
 				let underneath = false;
@@ -693,8 +218,8 @@ class Game {
 	}
 
 	_detectCollisionBallObstacle() {
-		let ball = this._ball();  
-		let obstacle = this._obstacle();
+		let ball = this.gameObjects.ball;  
+		let obstacle = this.gameObjects.obstacle;
 
 		if (this._detectCollisionBarrier()) {
 			if (ball.y + BALL_RADIUS > obstacle.y) {
@@ -716,25 +241,25 @@ class Game {
 
 	_detectCollision() {
 		let col1 = this._detectCollisionBallDudes();
-
 		let col2 = this._detectCollisionBallObstacle();	
+
 		if(col1 && col2) {
-				this._ball()._bounceWithDirection(DIRECTION.UP);
+				this.gameObjects.ball._bounceWithDirection(DIRECTION.UP);
 		}
 
 	}
 
 	_calculateReflection() {
-		let dx = (this._dude().x - this._ball().x) / (this._dude().radius + this._ball().radius);
-		this._ball()._bounce(dx, this._dude().vector);
+		let dx = (this.gameObjects.dude1.x - this.gameObjects.ball.x) / (this.gameObjects.dude1.radius + this.gameObjects.ball.radius);
+		this.gameObjects.ball._bounce(dx, this.gameObjects.dude1.vector);
 	}
 
 	_receiveStateDude2() {
 		if (this.receivingTransmission) {
 			let transmission =  this.IOConnection.getInput();
 			if (transmission != null) {
-				this._dude2().x = 2/3 * transmission.x;
-				this._dude2().y = transmission.y;
+				this.gameObjects.dude2.x = 2/3 * transmission.x;
+				this.gameObjects.dude2.y = transmission.y;
 			}
 		}		
 	}
@@ -744,7 +269,7 @@ class Game {
 	}
 
 	_detectEnding() {
-		if (this._ball().hitGround > 0 ) {
+		if (this.gameObjects.ball.hitGround > 0 ) {
 			if (this._updateScore()) {
 				this._nextPoint(); 
 			}
@@ -763,16 +288,16 @@ class Game {
 	_resetScore() {
 		this.score.left = 0;
 		this.score.right = 0;
-		this.lastScorer = null; 
+		this.lastScorerWidth = 1; 
 	}
 
 	_updateScore() {
-		if (this._ball().x < WIDTH/2) {
+		if (this.gameObjects.ball.x < WIDTH/2) {
 			this.score.right++;
-			this.lastScorer = 0; 
+			this.lastScorerWidth = 3; 
 		} else {
 			this.score.left++;
-			this.lastScorer = 1; 
+			this.lastScorerWidth = 1; 
 		}
 
 		if (this.score.left < 3 && this.score.right < 3) {
@@ -799,7 +324,7 @@ class Game {
 		}
 
 		this.context.fillText(text + " dude WINS!", WIDTH * 0.25, HEIGHT * 0.4); 
-		this.context.fillText("Press [enter] for restart", WIDTH * 0.3, HEIGHT * 0.6);
+		this.context.fillText("Press [enter] for restart", WIDTH * 0.35, HEIGHT * 0.6);
 
 		this.stop();
 	}
@@ -807,37 +332,25 @@ class Game {
 	stop() {
 		clearInterval(this.gameRun);
 		this.state = STATE.STOPPED; 
-		console.log("ending");
 	}
 
-	run() {
-		this.gameRun = setInterval(() => {
-			this.state = STATE.RUNNING;
-			this._detectCollision();
-
-			if (this.mode === MODE.ONE_PLAYER_MODE) {
-				let ball = this._ball();
-				this._dude2().aiMove(ball.x,ball.y,ball.vector);
-			}
-	
-			this.gameObjects.forEach(a => a._calculatePosition());
-
-
-
-			if (this.IOConnectio && this.mode === MODE.TWO_PLAYER_MODE) {
-				this._transmitStatesBallAndDude(); 
-				this._receiveStateDude2();	
-			}
-
-			this.context.clearRect(0, 0, WIDTH, HEIGHT);
+	drawGameState() {
+		this.context.clearRect(0, 0, WIDTH, HEIGHT);
 
 			if (this._detectEnding()) {
 				this._drawEnding();
 			}	
-
 			this._drawScore();
-			this.gameObjects.forEach(a => a._draw());
-		}, FRAME_SPEED_MS);
+
+			this.gameObjects.dude1._draw();
+			this.gameObjects.dude2._draw();
+			this.gameObjects.ball._draw();
+			this.gameObjects.obstacle._draw();
 	}
 
+	calculatePositions() {
+		this.gameObjects.dude1.calculatePosition();
+		this.gameObjects.dude2.calculatePosition();
+		this.gameObjects.ball.calculatePosition();
+	}
 }
