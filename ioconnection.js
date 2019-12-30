@@ -4,40 +4,41 @@ const PORT = '3000'
 class IOConnection {
 
 	constructor() {
+		this.playerId;
 	}
 
 	connect() {
 		this.socket = io.connect(IP_ADDRESS + ":" + PORT);
 		this.socket.on('connect', this.onConnect);
-		this.socket.on('message', this.onMessage);
-		this.socket.on('dude', this.onDude);
+		this.socket.on('welcome', this.onWelcome);
+		this.socket.on('startgame', this.onStart);
 		this.stack = [];
 	}
 
-	onMessage = (message) => {
-		console.log("Message received: " + message);
+	onWelcome = (data) => {
+		console.log(data.message + " | " + data.id + "position " + data.position); 
+		this.socket.emit('i am client', {data: 'foo!', id: data.id});
+		this.playerId = data.id; 
+	}
+
+	sendReady = (callback) => {
+		channel = 'ready' + this.playerId; 
+		console.log("channel");
+		this.socket.emit(channel, "yes!");
+		this.callback = callback;
+		callback("yo");
+	}
+
+	getRoom = (number, callback) => {
+		this.callback = callback; 
+	}
+
+	onStart = (data) => {
+		console.log("datga");
+		this.callback("GOGOGOGO");
 	}
 
 	onConnect = (event) => {
-		this.doSend("Hi servert..");
-	}
-
-	onDude = (message) => {
-		this.stack.push(message);
-	}
-
-	getInput = () => {
-		if (this.stack.length == 0) {
-			return null; 
-		}
-		return this.stack.pop();
-	}
-	
-	doSend(message) {
-		this.socket.emit('message', message);
-	}
-
-	transmit(object) {
-		this.socket.emit(object.name,{'x' : object.x, 'y' : object.y});
+		console.log("IO connected...")
 	}
 }   
