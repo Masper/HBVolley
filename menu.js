@@ -76,22 +76,10 @@ class Menu {
         }
 
         if (active.action == ACTION.SUBSCRIBE) {
-            this.ioConnection.getRoom(1, this._callBackRoom);
+            this.ioConnection.joinRoom(); 
             this._subscribe(active);
         }
     }
-
-    _callBackRoom(thing) {
-        console.log(thing);
-        this.ioConnection.sendReady(this._call2);
-        
-    }
-
-    _call2(thing) {
-        console.log(thing);
-    }
-
-
 
     _subscribe(item) {
         item.isSubscribed = !item.isSubscribed;
@@ -132,7 +120,9 @@ class Menu {
 
 
 	_startGame(mode) {  
-		// should be callback for gamerunner
+        // should be callback for gamerunner
+        this.items = []; 
+        window.onkeydown = null;
 		let game = new Game(this.context, this.ioConnection, mode);
 		game.run();
 	}

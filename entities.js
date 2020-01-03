@@ -11,10 +11,10 @@ class Ball {
 	}
 	
 	_bounce(x, vector, underneath) {
-		let y = 1+x;
+		let y = 1 + x;
 
 		if (x > 0 ) {
-			y = 1-x;
+			y = 1 - x;
 		}
 
 		let momentum = Math.abs(this.vector.dx) + Math.abs(this.vector.dy); 
@@ -22,14 +22,14 @@ class Ball {
 		if (APPLY_FRICTION_BOUNCE) {
 			this.vector.dx = momentum * -x * DUDE_FRICTION;
 			this.vector.dy = momentum * y * DUDE_FRICTION;
-		}
+		} 
 		else {
-		this.vector.dx = momentum * -x;
-		this.vector.dy = momentum * y;
+			this.vector.dx = momentum * -x;
+			this.vector.dy = momentum * y;
 		}
 
 		if (vector.dy > 0 ) {
-			this.vector.dy += 1.5 * vector.dy; 
+			this.vector.dy += 1.6 * vector.dy; 
 		}
 
 		this.vector.dx += 1.2 * vector.dx;
@@ -103,12 +103,12 @@ class Ball {
 			this.vector.dx *= WALL_FRICTION;
 		}
 
-		if (this.x > WIDTH - this.radius/2) {
-			this.x = WIDTH - this.radius/2;
+		if (this.x >= WIDTH - this.radius / 2) {
+			this.x = WIDTH - this.radius / 2;
 			this.vector.dx *= WALL_FRICTION;
 		} 
 
-		if (this.y <= this.radius ) {
+		if (this.y <= this.radius) {
 			this.hitGround += 1; 
 			this.y = this.radius;
 			this.vector.dy *= GROUND_FRICTION;
@@ -135,7 +135,8 @@ class Dude {
 		isPlayer ? this._initPlayer() : this._initEnemy();	
 		this.vector = {dx: 0, dy:0};
 		this.radius = DUDE_RADIUS;
-        this._draw();
+		this.direction = DIRECTION.STOP;
+		this._draw();
 	}
 
 	_initPlayer() {
@@ -230,17 +231,70 @@ class Dude {
 		this.context.fill();
 	}
 
-	_applyDirection(direction) {
-			if (direction === DIRECTION.LEFT) {
-				this.vector.dx = HORIZONTAL_MOMENTUM * -1; 
+	setDirection() {
+		if (this.isPlayer) {
+		kd.RIGHT.down = () => {
+		this.direction = DIRECTION.RIGHT;
+		}
+		
+		kd.RIGHT.up = () => {
+		this.direction = DIRECTION.STOP;
+		}
+
+		kd.LEFT.down = () => {
+		this.direction = DIRECTION.LEFT;
+	   }
+
+	   kd.LEFT.up = () => {
+		this.direction = DIRECTION.STOP;
+	   }
+
+	   kd.UP.down = () => {
+		   this._callJump(); 
+	   }
+	}
+
+		if (!this.isPlayer && !this.AI) {
+		kd.D.down = () => {
+			this.direction = DIRECTION.RIGHT;
+		}
+			
+		kd.D.up = () => {
+			this.direction = DIRECTION.STOP;
+		}
+	
+		kd.A.down = () => {
+			this.direction = DIRECTION.LEFT;
+		 }
+	
+		 kd.A.up = () => {
+			this.direction = DIRECTION.STOP;
+		 }
+
+		 kd.W.down = () => {
+			this._callJump(); 
+		}
+	   }
+	}
+
+	applyDirection() {
+		if (this.direction === DIRECTION.LEFT) {
+	
+			this.vector.dx -= HORIZONTAL_MOMENTUM; 
+			if (this.vector.dx * -1 > MAX_SPEED_DUDE) {
+				this.vector.dx = -1 * MAX_SPEED_DUDE;
 			}
-			else if (direction === DIRECTION.RIGHT) {
-				this.vector.dx = HORIZONTAL_MOMENTUM; 
+		}
+		else if (this.direction === DIRECTION.RIGHT) {
+
+			this.vector.dx += HORIZONTAL_MOMENTUM; 
+			if (this.vector.dx > MAX_SPEED_DUDE) {
+				this.vector.dx = MAX_SPEED_DUDE;
 			}
-			else if (direction === DIRECTION.STOP) {
-				this.vector.dx = 0; 
-			}
-		this.state = direction; 
+		}
+		else if (this.direction === DIRECTION.STOP) {
+			this.vector.dx = 0; 
+		}
 	}
 	
 	calculatePosition() {
@@ -249,10 +303,28 @@ class Dude {
 
 		this._boundaryCheck();
 		this._applyGravity(); 
+		this._applyTicks();
+	}
+
+	_applyTicks() {
+		if (this.vector.dx > 0) {
+			this.vector.dx -= MOVEMENT_TICKS_SIZE; 
+			if (this.vector.dx < 0) {
+				this.vector.dx = 0; 
+				this.direction = DIRECTION.STOP; 
+
+			}
+		}
+		else if (this.vector.dx < 0) {
+			this.vector.dx += MOVEMENT_TICKS_SIZE; 
+			if (this.vector.dx > 0) {
+				this.vector.dx = 0; 
+				this.direction = DIRECTION.STOP; 
+			}
+		}
 	}
 
 	_callJump() {
-		this.jumpCall = true; 
 		if (this.vector.dy == 0 || this.y == 0) {
 			this.vector.dy = INITAL_JUMP_VELOCITY;
 		}
@@ -269,9 +341,8 @@ class Dude {
 		if (jump) {
 			this._callJump();
 		}
-
 		if (direction) {
-			this._applyDirection(direction);
+			this.direction = direction; 
 		}
 	}
 
@@ -308,7 +379,7 @@ class Dude {
 class Obstacle {
 	constructor(context) {
         this.context = context;
-		this.x = WIDTH/2;
+		this.x = WIDTH / 2;
 		this.y = HEIGHT - HEIGHT_BARRIER;
 		this.height = HEIGHT_BARRIER; 
 		this.width = WIDTH_BARRIER;
