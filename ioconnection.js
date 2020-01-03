@@ -5,40 +5,24 @@ class IOConnection {
 
 	constructor() {
 		this.playerId;
+		this.stack = [];
 	}
 
 	connect() {
 		this.socket = io.connect(IP_ADDRESS + ":" + PORT);
 		this.socket.on('connect', this.onConnect);
-		this.socket.on('welcome', this.onWelcome);
-		this.socket.on('startgame', this.onStart);
-		this.stack = [];
+		this.socket.on('message', this.onMessage);
 	}
 
-	onWelcome = (data) => {
-		console.log(data.message + " | " + data.id + "position " + data.position); 
-		this.socket.emit('i am client', {data: 'foo!', id: data.id});
-		this.playerId = data.id; 
+	onMessage(message) {
+		console.log(message); 
 	}
 
-	sendReady = (callback) => {
-		channel = 'ready' + this.playerId; 
-		console.log("channel");
-		this.socket.emit(channel, "yes!");
-		this.callback = callback;
-		callback("yo");
+	joinRoom() {
+		this.socket.emit('joined');
 	}
 
-	getRoom = (number, callback) => {
-		this.callback = callback; 
-	}
-
-	onStart = (data) => {
-		console.log("datga");
-		this.callback("GOGOGOGO");
-	}
-
-	onConnect = (event) => {
+	onConnect = (socket) => {
 		console.log("IO connected...")
 	}
 }   

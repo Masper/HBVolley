@@ -16,8 +16,8 @@ const STATE = {
 	STOPPED: 'STOPPED'
 }
 
-const BALL_RADIUS = 25;
-const DUDE_RADIUS = 65;
+const BALL_RADIUS = 15;
+const DUDE_RADIUS = 60;
 
 const BALL_COLOUR = '#FF5733'; 
 const DUDE_COLOUR = '#f9e711';
@@ -27,7 +27,7 @@ const BARRIER_COLOUR = '#000000';
 const WIDTH = 1200;
 const HEIGHT = 700;
 
-const PARKINSON_PREVENTION = 5;
+const PARKINSON_PREVENTION = 7;
 
 const MENU_FONT = "50px 'Lilita One";
 const MENU_FONT_COLOUR = '#09C60B';
@@ -38,12 +38,14 @@ const ENDING_TEXT_STYLING = "12px 'Lilita One";
 const WIDTH_BARRIER = 5;
 const HEIGHT_BARRIER = 75;
 
-const MAX_SPEED_BALL = 18;
-const FRAME_SPEED_MS = 8;
+const MOVEMENT_TICKS_SIZE = 0.1; 
+const MAX_SPEED_DUDE = 5;
+const MAX_SPEED_BALL = 16;
+const FRAME_SPEED_MS = 8	;
 const APPLY_FRICTION_BOUNCE = true; 
-const HORIZONTAL_MOMENTUM = 4;
+const HORIZONTAL_MOMENTUM = 0.7;
 const GRAVITY = 0.09;
-const INITAL_JUMP_VELOCITY = 6; 
+const INITAL_JUMP_VELOCITY = 5.4; 
 
 const DUDE_FRICTION = 0.92;
 const GROUND_FRICTION = -0.86; 

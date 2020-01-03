@@ -23,21 +23,20 @@ class Game {
 		this._initIO(IOConnection); 
 		this._initGameObjects();
 		this.score = {'left' : 0, 'right' : 0};
-		this._setControls();
 	}
 
 	run() {
 		this.gameRun = setInterval(() => {
 			this.state = STATE.RUNNING;
-			this._detectCollision();
+			kd.tick(); 
+			this.applyMoves(); 
+			this.calculatePositions();
+			this.detectCollisions();
 
 			if (this.mode === MODE.ONE_PLAYER_MODE) {
 				let ball = this.gameObjects.ball;
 				this.gameObjects.dude2.aiMove(ball.x,ball.y,ball.vector);
 			}
-
-			this.calculatePositions();
-
 			if (this.IOConnection && this.mode === MODE.MULTI_PLAYER_MODE) {
 				this._transmitStatesBallAndDude(); 
 				this._receiveStateDude2();	
@@ -46,6 +45,21 @@ class Game {
 			this.drawGameState(); 		
 
 		}, FRAME_SPEED_MS);
+	}
+
+	applyMoves() {
+		this.gameObjects.dude1.setDirection();
+
+		if (this.mode === MODE.ONE_PLAYER_MODE) {
+			let ball = this.gameObjects.ball;
+			this.gameObjects.dude2.aiMove(ball.x,ball.y,ball.vector);
+		}	
+		else {
+			this.gameObjects.dude2.setDirection();		
+		}
+
+		this.gameObjects.dude1.applyDirection();
+		this.gameObjects.dude2.applyDirection(); 
 	}
 
 	_initIO(IOConnection) {
@@ -65,37 +79,11 @@ class Game {
 		this.gameObjects.dude1 = new Dude(this.context, true);
 		this.gameObjects.dude2 = new Dude(this.context, false);
 		this.gameObjects.obstacle = new Obstacle(this.context);
-
+		
 		this._initiateAi();
 	}
 
-	_setControls() {
-		window.onkeydown = event => {
-			let dude = this.gameObjects.dude1;
-			let dude2 = this.gameObjects.dude2;
-			if (event.key === 'ArrowRight') {
-				dude._applyDirection(DIRECTION.RIGHT);
-			} else if (event.key === 'ArrowLeft') {
-				dude._applyDirection(DIRECTION.LEFT);
-			} else if (event.key === 'ArrowUp') {
-				dude._callJump(); 
-			} else if (event.key === 'ArrowDown') {
-				dude._applyDirection(DIRECTION.STOP);
-			} else if (event.key === 'd' && this.mode === MODE.TWO_PLAYER_MODE) {
-				dude2._applyDirection(DIRECTION.RIGHT);
-			} else if (event.key === 'w' && this.mode === MODE.TWO_PLAYER_MODE) {
-				dude2._callJump();
-			} else if (event.key === 'a' && this.mode === MODE.TWO_PLAYER_MODE) {
-				dude2._applyDirection(DIRECTION.LEFT);
-			} else if (event.key === 's' && this.mode === MODE.TWO_PLAYER_MODE) {
-				dude2._applyDirection(DIRECTION.STOP);		
-			} else if (event.key === 'Enter' && this.state === STATE.STOPPED) {
-				this._restartGame();
-			}
-		}
-	}
-
-	_detectCollisionBarrier() {
+	detectCollisionBarrier() {
 		let circle={
 			x:this.gameObjects.ball.x,
 			y:this.gameObjects.ball.y,
@@ -134,61 +122,45 @@ class Game {
 	_setEyeVisual(dude, dx, dy, distance) 	{
 		if (distance > 355 ) {
 		dude.dilation = 1.15; 
-		}
-		else if (distance > 10) {
+		}	else if (distance > 10) {
 			dude.dilation = 0.95; 
-		}
-		else {
+		}	else {
 			dude.dilation = 1.10;
 		}
 
-	if (dx < -400 ) {
+		if (dx < -400 ) {
 			dude.amtlookright = 4;
-		}
-		if (dx < -300 ) {
+		}	else if  (dx < -300 ) {
 			dude.amtlookright = 3;
-		}
-		else if (dx < -200) {
+		}	else if (dx < -200) {
 			dude.amtlookright = 2;
-		}
-		else if (dx < -20) {
+		}	else if (dx < -20) {
 			dude.amtlookright =  1;
-		}
-		else if (dx < 0) {
+		}	else if (dx < 0) {
 			dude.amtlookright = 0; 
-		}
-		else if (dx < 100) {
+		}	else if (dx < 100) {
 			dude.amtlookright = -1; 
-		}
-		else if (dx < 200) {
+		}	else if (dx < 200) {
 			dude.amtlookright = -2; 
-		}
-		else  {
+		}	else  {
 			dude.amtlookright = -3;
 		}
 
 		if (dy < -400 ) {
 			dude.amtlookup = 4;
-		}
-		if (dy < -300 ) {
+		}	else if (dy < -300 ) {
 			dude.amtlookup = 3;
-		}
-		else if (dy < -200) {
+		}	else if (dy < -200) {
 			dude.amtlookup = 2;
-		}
-		else if (dy < -20) {
+		}	else if (dy < -20) {
 			dude.amtlookup =  1;
-		}
-		else if (dy < 0) {
+		}	else if (dy < 0) {
 			dude.amtlookup = 0; 
-		}
-		else if (dy < 25) {
+		}	else if (dy < 25) {
 			dude.amtlookup = -1; 
-		}
-		else  {
+		}	else  {
 			dude.amtlookup = -2;
 		}
-
 	}
 
 	_detectCollisionBallDudes() {
@@ -221,7 +193,7 @@ class Game {
 		let ball = this.gameObjects.ball;  
 		let obstacle = this.gameObjects.obstacle;
 
-		if (this._detectCollisionBarrier()) {
+		if (this.detectCollisionBarrier()) {
 			if (ball.y + BALL_RADIUS > obstacle.y) {
 				ball._bounceWithDirection(DIRECTION.UP);	
 				return true; 
@@ -239,7 +211,7 @@ class Game {
 		}
 	}
 
-	_detectCollision() {
+	detectCollisions() {
 		let col1 = this._detectCollisionBallDudes();
 		let col2 = this._detectCollisionBallObstacle();	
 
@@ -264,14 +236,10 @@ class Game {
 		}		
 	}
 
-	_nextPoint() {
-			this._initGameObjects();
-	}
-
 	_detectEnding() {
 		if (this.gameObjects.ball.hitGround > 0 ) {
 			if (this._updateScore()) {
-				this._nextPoint(); 
+				this._initGameObjects();
 			}
 			else {
 				return true; 
@@ -332,6 +300,9 @@ class Game {
 	stop() {
 		clearInterval(this.gameRun);
 		this.state = STATE.STOPPED; 
+		kd.ENTER.press = () => {
+			 this._restartGame()
+		}
 	}
 
 	drawGameState() {
