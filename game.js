@@ -1,18 +1,15 @@
 class GameRunner {	
 	constructor(ioConnection) {
-		this._initCanvas();
-		// reference to IO because no callback yet
+		this.initCanvas();
 		this.menu = new Menu(this.context, ioConnection);
 	}
 
-	_initCanvas() {
+	initCanvas() {
 		const canvas = document.getElementsByTagName('canvas')[0];
 		canvas.width = WIDTH;
   		canvas.height = HEIGHT;
-  		this.context = canvas.getContext('2d');
-	}
-
-	run() {
+		const context = canvas.getContext('2d');
+		this.context = context;
 	}
 }
 
@@ -20,30 +17,21 @@ class Game {
 	constructor(context, IOConnection, gameMode) {
 		this.context = context; 
 		this.mode = gameMode; 
-		this._initIO(IOConnection); 
-		this._initGameObjects();
+		this.initIO(IOConnection); 
+		this.initGameObjects();
 		this.score = {'left' : 0, 'right' : 0};
 	}
 
 	run() {
 		this.gameRun = setInterval(() => {
 			this.state = STATE.RUNNING;
-			kd.tick(); 
+			kd.tick();
 			this.applyMoves(); 
-			this.calculatePositions();
+			this.calculatePositions();	
 			this.detectCollisions();
 
-			if (this.mode === MODE.ONE_PLAYER_MODE) {
-				let ball = this.gameObjects.ball;
-				this.gameObjects.dude2.aiMove(ball.x,ball.y,ball.vector);
-			}
-			if (this.IOConnection && this.mode === MODE.MULTI_PLAYER_MODE) {
-				this._transmitStatesBallAndDude(); 
-				this._receiveStateDude2();	
-			}
-
-			this.drawGameState(); 		
-
+			this.drawGameState();	 
+			this.detectEnding();
 		}, FRAME_SPEED_MS);
 	}
 
@@ -62,26 +50,44 @@ class Game {
 		this.gameObjects.dude2.applyDirection(); 
 	}
 
-	_initIO(IOConnection) {
+	initIO(IOConnection) {
 		this.IOConnection = IOConnection;
 		this.receivingTransmission = true;
 	}
 
-	_initiateAi() {
-		if (this.mode === MODE.ONE_PLAYER_MODE) {
-			this.gameObjects.dude2.blessWithAi(new AI());
-		}
-	}
 
-	_initGameObjects() {
+	initGameObjects() {
 		this.gameObjects = {};
-		this.gameObjects.ball = new Ball(this.context, WIDTH/4, HEIGHT*0.8);
-		this.gameObjects.dude1 = new Dude(this.context, true);
-		this.gameObjects.dude2 = new Dude(this.context, false);
-		this.gameObjects.obstacle = new Obstacle(this.context);
-		
-		this._initiateAi();
-	}
+
+		this.gameObjects.ball = new GameObjectBuilder(this.context)
+		.setType(GAMEOBJECT.BALL)
+		.setX(WIDTH*0.25)
+		.setY(HEIGHT*0.8)
+		.build();
+
+		this.gameObjects.dude1 = new GameObjectBuilder(this.context)
+		.setType(GAMEOBJECT.DUDE)
+		.setX(WIDTH*0.25)
+		.setY(0)
+		.setIsLeft(true)
+		.setIsHuman(true)
+		.build();
+
+		this.gameObjects.dude2 = new GameObjectBuilder(this.context)
+		.setType(GAMEOBJECT.DUDE)
+		.setX(WIDTH*0.75)
+		.setY(0)
+		.setIsLeft(false)
+		.setIsHuman(this.mode === MODE.ONE_PLAYER_MODE ? false: true)
+		.setAi(this.mode === MODE.ONE_PLAYER_MODE ? new AI() : null)
+		.build();
+
+		this.gameObjects.obstacle = new GameObjectBuilder(this.context)
+		.setType(GAMEOBJECT.OBSTACLE)
+		.setX(WIDTH*0.5)
+		.setY(HEIGHT - HEIGHT_BARRIER)
+		.build();
+		}
 
 	detectCollisionBarrier() {
 		let circle={
@@ -102,7 +108,7 @@ class Game {
 		}
 	}
 
-	_transmitStatesBallAndDude() {
+	transmitStatesBallAndDude() {
 		let ball = {
 			"name" : 'ball',
 			"x" : this.gameObjects.ball.x,
@@ -119,7 +125,7 @@ class Game {
 		this.IOConnection.transmit(dude);
 	}
 
-	_setEyeVisual(dude, dx, dy, distance) 	{
+	setEyeVisual(dude, dx, dy, distance) 	{
 		if (distance > 355 ) {
 		dude.dilation = 1.15; 
 		}	else if (distance > 10) {
@@ -163,103 +169,85 @@ class Game {
 		}
 	}
 
-	_detectCollisionBallDudes() {
+	detectCollisionBallDudes() {
 		let dudes = []
 		dudes.push(this.gameObjects.dude1);
 		dudes.push(this.gameObjects.dude2);
 		let ball = this.gameObjects.ball; 
 
-		for (let i = 0; i<dudes.length; i++) {	
+		for (let i = 0; i < dudes.length; i++) {	
 			let dude = dudes[i];
 			let dx = dude.x - ball.x;
 			let dy = dude.y - ball.y;
 			let distance = Math.sqrt(dx * dx + dy * dy);
 
-			this._setEyeVisual(dude, dx, dy, distance);		
+			this.setEyeVisual(dude, dx, dy, distance);		
 
-			if (distance < dude.radius + ball.radius) {
-				let underneath = false;
-				if (dy > ball.radius) {
-					underneath = true; 
-				}
+			if (distance <= dude.radius + ball.radius) {
 				let cosinus = (dude.x - ball.x) / (dude.radius + ball.radius);
-				ball._bounce(cosinus, dude.vector, underneath);
+				ball.bounce(cosinus, dude.vector);
 				return true; 
 			}
 		}
 	}
 
-	_detectCollisionBallObstacle() {
+	detectCollisionBallObstacle() {
 		let ball = this.gameObjects.ball;  
 		let obstacle = this.gameObjects.obstacle;
 
 		if (this.detectCollisionBarrier()) {
-			if (ball.y + BALL_RADIUS > obstacle.y) {
-				ball._bounceWithDirection(DIRECTION.UP);	
+			if (ball.y + BALL_RADIUS >= obstacle.y) {
+				ball.bounceWithDirection(DIRECTION.UP);	
 				return true; 
 			}
 
-			if (ball.x < obstacle.x) {
-				ball._bounceWithDirection(DIRECTION.LEFT);
+			if (ball.x <= obstacle.x) {
+				ball.bounceWithDirection(DIRECTION.LEFT);
 				return true; 
 			}
 
 			if (ball.x > obstacle.x) {
-				ball._bounceWithDirection(DIRECTION.RIGHT);
+				ball.bounceWithDirection(DIRECTION.RIGHT,);
 				return true; 
 			}
 		}
 	}
 
 	detectCollisions() {
-		let col1 = this._detectCollisionBallDudes();
-		let col2 = this._detectCollisionBallObstacle();	
+		let col1 = this.detectCollisionBallDudes();
+		let col2 = this.detectCollisionBallObstacle();	
 
 		if(col1 && col2) {
-				this.gameObjects.ball._bounceWithDirection(DIRECTION.UP);
+			this.gameObjects.ball.bounceWithDirection(DIRECTION.UP);
 		}
-
 	}
 
-	_calculateReflection() {
-		let dx = (this.gameObjects.dude1.x - this.gameObjects.ball.x) / (this.gameObjects.dude1.radius + this.gameObjects.ball.radius);
-		this.gameObjects.ball._bounce(dx, this.gameObjects.dude1.vector);
-	}
 
-	_receiveStateDude2() {
-		if (this.receivingTransmission) {
-			let transmission =  this.IOConnection.getInput();
-			if (transmission != null) {
-				this.gameObjects.dude2.x = 2/3 * transmission.x;
-				this.gameObjects.dude2.y = transmission.y;
-			}
-		}		
-	}
-
-	_detectEnding() {
+	detectEnding() {
 		if (this.gameObjects.ball.hitGround > 0 ) {
-			if (this._updateScore()) {
-				this._initGameObjects();
+			if (this.updateScore()) {
+				this.initGameObjects();
 			}
 			else {
-				return true; 
+				this.drawEnding(); 
+				this.stop();
 			}
 		}
 	}
 
-	_restartGame() { 
-		this._initGameObjects();
-		this._resetScore();
+	restartGame() { 
+		this.initGameObjects();
+		this.resetScore();
 		this.run()
 	}
 
-	_resetScore() {
+	resetScore() {
 		this.score.left = 0;
 		this.score.right = 0;
 		this.lastScorerWidth = 1; 
 	}
 
-	_updateScore() {
+	updateScore() {
 		if (this.gameObjects.ball.x < WIDTH/2) {
 			this.score.right++;
 			this.lastScorerWidth = 3; 
@@ -267,20 +255,19 @@ class Game {
 			this.score.left++;
 			this.lastScorerWidth = 1; 
 		}
-
 		if (this.score.left < 3 && this.score.right < 3) {
 			return true; 
 		}
 		return false;
 	}
 
-	_drawScore() {
+	drawScore() {
 		let score = this.score;
 		this.context.fillStyle = MENU_FONT_COLOUR_ACTIVE;
 		this.context.fillText(score.left + " : " + score.right, WIDTH * 0.45, HEIGHT * 0.1); 
 	}
 
-	_drawEnding() {
+	drawEnding() {
 		let text; 
 		if (this.score.left == 3) {
 			this.context.fillStyle = DUDE_COLOUR; 
@@ -292,36 +279,29 @@ class Game {
 		}
 
 		this.context.fillText(text + " dude WINS!", WIDTH * 0.25, HEIGHT * 0.4); 
-		this.context.fillText("Press [enter] for restart", WIDTH * 0.35, HEIGHT * 0.6);
-
-		this.stop();
+		this.context.fillText("Press [ENTER] for restart", WIDTH * 0.35, HEIGHT * 0.6);
 	}
 
 	stop() {
 		clearInterval(this.gameRun);
 		this.state = STATE.STOPPED; 
 		kd.ENTER.press = () => {
-			 this._restartGame()
+			 this.restartGame()
 		}
 	}
 
 	drawGameState() {
 		this.context.clearRect(0, 0, WIDTH, HEIGHT);
+		this.drawScore();
 
-			if (this._detectEnding()) {
-				this._drawEnding();
-			}	
-			this._drawScore();
-
-			this.gameObjects.dude1._draw();
-			this.gameObjects.dude2._draw();
-			this.gameObjects.ball._draw();
-			this.gameObjects.obstacle._draw();
+		for (var object in this.gameObjects) {
+			this.gameObjects[object].draw();
+		}
 	}
 
 	calculatePositions() {
-		this.gameObjects.dude1.calculatePosition();
-		this.gameObjects.dude2.calculatePosition();
-		this.gameObjects.ball.calculatePosition();
+		for (var object in this.gameObjects) {
+			this.gameObjects[object].calculatePosition();
+		}
 	}
 }
