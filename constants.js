@@ -1,9 +1,17 @@
+'use strict';
+
 const DIRECTION = {
 	LEFT: 'LEFT',
 	RIGHT: 'RIGHT',
 	STOP: 'STOP',
 	UP: 'UP'
 };
+
+const GAMEOBJECT = {
+	BALL: 'BALL',
+	DUDE: 'DUDE',
+	OBSTACLE: 'OBSTACLE'
+}
 
 const MODE = {
 	ONE_PLAYER_MODE: 'ONE_PLAYER_MODE',
@@ -16,8 +24,12 @@ const STATE = {
 	STOPPED: 'STOPPED'
 }
 
-const BALL_RADIUS = 15;
-const DUDE_RADIUS = 60;
+const PLAYER ={
+	ONE: true,
+	TWO: false
+}
+let BALL_RADIUS = 20;
+let DUDE_RADIUS = 70;
 
 const BALL_COLOUR = '#FF5733'; 
 const DUDE_COLOUR = '#f9e711';
@@ -33,15 +45,15 @@ const MENU_FONT = "50px 'Lilita One";
 const MENU_FONT_COLOUR = '#09C60B';
 const MENU_FONT_COLOUR_ACTIVE = '#E116C0';
 
-const ENDING_TEXT_STYLING = "12px 'Lilita One";
+const ENDING_TEXT_STYLING = "16px 'Lilita One";
 
 const WIDTH_BARRIER = 5;
 const HEIGHT_BARRIER = 75;
 
 const MOVEMENT_TICKS_SIZE = 0.1; 
-const MAX_SPEED_DUDE = 5;
-const MAX_SPEED_BALL = 16;
-const FRAME_SPEED_MS = 8	;
+let MAX_SPEED_DUDE = 5;
+let MAX_SPEED_BALL = 10;
+const FRAME_SPEED_MS = 8;
 const APPLY_FRICTION_BOUNCE = true; 
 const HORIZONTAL_MOMENTUM = 0.7;
 const GRAVITY = 0.09;
@@ -49,4 +61,4 @@ const INITAL_JUMP_VELOCITY = 5.4;
 
 const DUDE_FRICTION = 0.92;
 const GROUND_FRICTION = -0.86; 
-const WALL_FRICTION = -1.01
+const WALL_FRICTION = -1.00
