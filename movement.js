@@ -42,12 +42,12 @@ const dudeMovement = {
 		}
     },
     applyGravity() {	
-		if (this.y >= 0) {
+		if (this.y >= GROUND_LEVEL) {
 			this.vector.dy -= GRAVITY; 
 		}
 		else {
 			this.vector.dy = 0; 
-			this.y = 0;
+			this.y = GROUND_LEVEL;
 		}
 	}
 }

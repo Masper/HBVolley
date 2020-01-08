@@ -173,10 +173,17 @@ class Dude extends GameObject{
 		if (!this.AI) {
 			return; 
 		}
-		this.direction = this.AI.decideDirection(ballx, bally, this.x, this.y, ballvector);
 
-		if (this.AI.decideJump(ballx, bally, this.x, this.y, ballvector)) {
-			this.callJump();
+		if (this.isLeft) {
+			this.direction = this.AI.decideDirection(ballx, bally, this.x, this.y, ballvector, true);
+			if (this.AI.decideJump(ballx, bally, this.x, this.y, ballvector, true)) {
+				this.callJump();
+			}
+		} else {
+			this.direction = this.AI.decideDirection(ballx, bally, this.x, this.y, ballvector, false);
+			if (this.AI.decideJump(ballx, bally, this.x, this.y, ballvector, false)) {
+				this.callJump();
+			}
 		}
 	}
 }
@@ -184,7 +191,7 @@ class Dude extends GameObject{
 class Obstacle extends GameObject{
 	constructor(context, x,y) {
 		super(context, x,y);
-		this.height = HEIGHT_BARRIER; 
+		this.height = HEIGHT_BARRIER + GROUND_LEVEL; 
 		this.width = WIDTH_BARRIER;
 		this.colour = BARRIER_COLOUR; 
 	}

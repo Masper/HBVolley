@@ -20,20 +20,23 @@ const dudeDrawLogic = {
    		this.drawBlink();
 	},
 	drawBody() {
+		console.log(MAKE_ROUND);
 		this.context.beginPath();
-		this.context.arc(this.x, HEIGHT - this.y  , this.radius,  Math.PI, 2 * Math.PI, false);
+		this.context.arc(this.x, HEIGHT - this.y  , this.radius,  MAKE_ROUND ? 0 : Math.PI, 2 * Math.PI, false);
 		this.context.fillStyle = '#000000';
 		this.context.fill();
 		
 		this.context.beginPath();
-		this.context.arc(this.x, HEIGHT - this.y, this.radius -3,  Math.PI, 2 * Math.PI, false);
+		this.context.arc(this.x, HEIGHT - this.y, this.radius -3,  MAKE_ROUND ? 0 : Math.PI, 2 * Math.PI, false);
 		this.context.fillStyle = this.colour; 
 		this.context.fill();
 	
+		if (!MAKE_ROUND) {
 		this.context.beginPath();
 		this.context.moveTo(this.x - this.radius, HEIGHT - this.y - 1);
 		this.context.lineTo(this.x + this.radius, HEIGHT - this.y - 1);
 		this.context.lineWidth = 3;
+		}
 	
 		this.context.stroke();
 	},
