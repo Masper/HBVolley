@@ -1,14 +1,20 @@
 const LOCATION = {
-    '_1' : 0.2,
-    '_2' : 0.4, 
-    '_3' : 0.6,
-    '_4' : 0.8
+    '_1' : 0.12,
+    '_2' : 0.22,
+    '_3' : 0.32,
+    '_4' : 0.42,
+    '_5' : 0.52,
+    '_6' : 0.62,
+    '_7' : 0.72,
+    '_8' : 0.82,
+    '_9' : 0.92
 };
 
 const ACTION = {
     GO_BACK : 'GO_BACK',
     SUBSCRIBE: 'SUBSCRIBE',
-    ENTER_ROOM : 'ENTER_ROOM'
+    ENTER_ROOM : 'ENTER_ROOM',
+    CHANGE_SETTINGS: 'CHANGE_SETTINGS'
 }
 
 class Menu {
@@ -53,15 +59,49 @@ class Menu {
 				this._changeActive(DIRECTION.DOWN); 
 			} else if (event.key === 'Enter') {
 			this._enterMenuItem();
-			}
-		}
+			} else if (event.key === 'ArrowRight') {
+                this.changeActiveNumber(true);       
+            } else if (event.key === 'ArrowLeft') {
+                this.changeActiveNumber(false); 
+            }
+        }
     }
+
+    changeActiveNumber(add) {
+        if (!this.screen == 3 ) {
+            return;
+        }
+        let active = this.items.find(e => e.active);
+        this.addition = active.size;
+
+        console.log(this.addition);
+
+        if (add) {
+            console.log("add");
+            active.add(this.addition);
+        } else {
+            this.addition = this.addition *-1;
+
+            console.log("deduct");
+            active.add(this.addition);
+        }
+
+        this._settingsMenu();
+
+    }
+
+
 
     _enterMenuItem() {
         let active = this.items.find(e => e.active);
 
-        if (active.action == MODE.ONE_PLAYER_MODE || active.action == MODE.TWO_PLAYER_MODE) {
+        if (active.action == MODE.ONE_PLAYER_MODE || active.action == MODE.TWO_PLAYER_MODE || active.action == MODE.AI_BATTLE_MODE) {
             this._startGame(active.action); 
+        }
+
+        if(active.action == ACTION.CHANGE_SETTINGS) {
+            this._settingsMenu(); 
+            this._drawMenuItems();
         }
 
         if (active.action == MODE.MULTI_PLAYER_MODE) {
@@ -72,6 +112,7 @@ class Menu {
         }
 
         if (active.action == ACTION.GO_BACK) {
+            reInitializeValues();
             this._firstMenu(); 
         }
 
@@ -117,7 +158,6 @@ class Menu {
 		this.context.fillStyle = '#000000';
 		this.context.fill();
     }
-
 
 	_startGame(mode) {  
         // should be callback for gamerunner
@@ -168,13 +208,33 @@ class Menu {
             'active' : false,
             'screen' : 1
             }
-		)
+        )
+        
+        this.items.push(
+			{
+            'text' : 'AI BATTLE GAME',
+            'action' : MODE.AI_BATTLE_MODE,
+			'location' : LOCATION._3,
+            'active' : false,
+            'screen' : 1
+			}
+        )
 
 		this.items.push(
 			{
             'text' : 'MULTI PLAYER GAME',
             'action' : MODE.MULTI_PLAYER_MODE,
-			'location' : LOCATION._3,
+			'location' : LOCATION._4,
+            'active' : false,
+            'screen' : 1
+			}
+        )
+
+        this.items.push(
+			{
+            'text' : 'GAME SETTINGS',
+            'action' : ACTION.CHANGE_SETTINGS,
+			'location' : LOCATION._5,
             'active' : false,
             'screen' : 1
 			}
@@ -182,6 +242,138 @@ class Menu {
         this.menuScreen = 1; 
 
 		this._drawMenuItems();
+    }
+
+    _settingsMenu() {
+        this.menuScreen = 3; 
+
+        this.context.clearRect(0, 0, WIDTH, HEIGHT);
+        
+        this.items = [];
+        console.log(configuration.size.ballRadius);
+        console.log(configuration.size.dudeRadius);
+
+        this.items.push( 
+            {
+                'text': 'Radius dudes: ' + configuration.size.dudeRadius,
+                'action': ACTION.CHANGE_NUMBER,
+                'size': 1,
+                'location' : LOCATION._1, 
+                'active' : true, 
+                'screen' : 3,
+                'add' : function(add) {configuration.size.dudeRadius += add;
+                }
+            }
+        );
+
+        this.items.push( 
+            {
+                'text': 'Radius ball: ' + configuration.size.ballRadius,
+                'action': ACTION.CHANGE_NUMBER,
+                'size': 1,
+                'location' : LOCATION._2, 
+                'active' : false, 
+                'screen' : 3,
+                'add' : function(add) {configuration.size.ballRadius += add;
+                }
+             }
+        );
+
+        this.items.push( 
+            {
+                'text': 'Max speed dude: ' + configuration.speed.maxSpeedDude,
+                'action': ACTION.CHANGE_NUMBER,
+                'size': 0.1,
+                'location' : LOCATION._3, 
+                'active' : false, 
+                'screen' : 3,
+                'add' : function(add) {configuration.speed.maxSpeedDude += add;
+                }
+            }
+        );
+
+        this.items.push( 
+            {
+                'text': 'Max speed ball: ' + configuration.speed.maxSpeedBall,
+                'action': ACTION.CHANGE_NUMBER,
+                'size': 0.1,
+                'location' : LOCATION._4,
+                'active' : false, 
+                'screen' : 3,
+                'add' : function(add) {configuration.speed.maxSpeedBall += add;
+                }
+            }
+        );
+
+        this.items.push( 
+            {
+                'text': 'Round boys: ' + configuration.visuals.makeRound,
+                'action': ACTION.CHANGE_NUMBER,
+                'size': 0.1,
+                'location' : LOCATION._5,
+                'active' : false, 
+                'screen' : 3,
+                'add' : function() {configuration.visuals.makeRound = !configuration.visuals.makeRound;
+                }
+            }
+        );
+
+        this.items.push( 
+            {
+                'text': 'Ground height: ' + configuration.location.ground,
+                'action': ACTION.CHANGE_NUMBER,
+                'size': 10,
+                'location' : LOCATION._6,
+                'active' : false, 
+                'screen' : 3,
+                'add' : function(add) {configuration.location.ground += add;
+                }
+            }
+        );
+
+        this.items.push( 
+            {
+                'text': 'Barrier height: ' + configuration.barrier.height,
+                'action': ACTION.CHANGE_NUMBER,
+                'size': 5,
+                'location' : LOCATION._7,
+                'active' : false, 
+                'screen' : 3,
+                'add' : function(add) {configuration.barrier.height += add;
+                }
+            }
+        );
+
+        this.items.push( 
+            {
+                'text': 'Jump speed: ' + configuration.physics.initalJumpVelocity,
+                'action': ACTION.CHANGE_NUMBER,
+                'size': 0.1,
+                'location' : LOCATION._8,
+                'active' : false, 
+                'screen' : 3,
+                'add' : function(add) {configuration.physics.initalJumpVelocity += add;
+                }
+            }
+        );
+
+ 
+        this.items.push (
+            {
+                'text': 'GO BACK',
+                'action': ACTION.GO_BACK,
+                'location' : LOCATION._9,
+                'active' : false, 
+                'screen' : 3
+            }
+        )
+
+        this.menuScreen = 3; 
+        this._drawMenuItems();
+    }
+
+    newSettingItem() {
+
     }
 
     _multiMenu() {

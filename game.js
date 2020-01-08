@@ -6,7 +6,7 @@ class GameRunner {
 
 	initCanvas() {
 		const canvas = document.getElementsByTagName('canvas')[0];
-		canvas.width = WIDTH;
+		canvas.width = WIDTH; 
   		canvas.height = HEIGHT;
 		const context = canvas.getContext('2d');
 		this.context = context;
@@ -29,21 +29,25 @@ class Game {
 			this.applyMoves(); 
 			this.calculatePositions();	
 			this.detectCollisions();
-
 			this.drawGameState();	 
 			this.detectEnding();
 		}, FRAME_SPEED_MS);
 	}
 
 	applyMoves() {
-		this.gameObjects.dude1.setDirection();
+		let ball = this.gameObjects.ball;
 
 		if (this.mode === MODE.ONE_PLAYER_MODE) {
-			let ball = this.gameObjects.ball;
+			this.gameObjects.dude1.setDirection();
 			this.gameObjects.dude2.aiMove(ball.x,ball.y,ball.vector);
 		}	
-		else {
+		else if (this.mode === MODE.TWO_PLAYER_MODE) {
+			this.gameObjects.dude1.setDirection();
 			this.gameObjects.dude2.setDirection();		
+		}
+		else if (this.mode === MODE.AI_BATTLE_MODE) {
+			this.gameObjects.dude1.aiMove(ball.x,ball.y,ball.vector);
+			this.gameObjects.dude2.aiMove(ball.x,ball.y,ball.vector);
 		}
 
 		this.gameObjects.dude1.applyDirection();
@@ -54,7 +58,6 @@ class Game {
 		this.IOConnection = IOConnection;
 		this.receivingTransmission = true;
 	}
-
 
 	initGameObjects() {
 		this.gameObjects = {};
@@ -70,7 +73,8 @@ class Game {
 		.setX(WIDTH*0.25)
 		.setY(0)
 		.setIsLeft(true)
-		.setIsHuman(true)
+		.setIsHuman(this.mode === MODE.AI_BATTLE_MODE ? false : true)
+		.setAi(this.mode === MODE.AI_BATTLE_MODE ? new AI(true) : null)
 		.build();
 
 		this.gameObjects.dude2 = new GameObjectBuilder(this.context)
@@ -78,14 +82,14 @@ class Game {
 		.setX(WIDTH*0.75)
 		.setY(0)
 		.setIsLeft(false)
-		.setIsHuman(this.mode === MODE.ONE_PLAYER_MODE ? false: true)
-		.setAi(this.mode === MODE.ONE_PLAYER_MODE ? new AI() : null)
+		.setIsHuman(this.mode === MODE.TWO_PLAYER_MODE ? true : false)
+		.setAi(this.mode === MODE.TWO_PLAYER_MODE ? null : new AI(false))
 		.build();
 
 		this.gameObjects.obstacle = new GameObjectBuilder(this.context)
 		.setType(GAMEOBJECT.OBSTACLE)
 		.setX(WIDTH*0.5)
-		.setY(HEIGHT - HEIGHT_BARRIER)
+		.setY(HEIGHT - HEIGHT_BARRIER - GROUND_LEVEL)
 		.build();
 		}
 
