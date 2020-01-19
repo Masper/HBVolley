@@ -318,6 +318,8 @@ class Game {
 
 	detectEnding() {
 		if (this.gameObjects.ball.hitGround > 0 ) {
+			input.x = 0; 
+			input.y = 0;
 			if (this.updateScore()) {
 				this.initGameObjects();
 			}
