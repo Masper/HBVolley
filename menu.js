@@ -17,6 +17,8 @@ const ACTION = {
     CHANGE_SETTINGS: 'CHANGE_SETTINGS'
 }
 
+var touchDetected = false; 
+
 class Menu {
 	constructor (context, ioConnection) {
 		this.ioConnection = ioConnection;
@@ -76,6 +78,7 @@ class Menu {
         }
 
         canvas.addEventListener("touchstart", e => {
+            touchDetected = true; 
             if (this.game != null) {
                 return;
             }
