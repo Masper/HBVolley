@@ -1,17 +1,80 @@
+var input = {'x':null,'y':0};
+
+
 class GameRunner {	
 	constructor(ioConnection) {
 		this.initCanvas();
 		this.menu = new Menu(this.context, ioConnection);
+		this.canvas;
 	}
 
 	initCanvas() {
-		const canvas = document.getElementsByTagName('canvas')[0];
-		canvas.width = WIDTH; 
-  		canvas.height = HEIGHT;
-		const context = canvas.getContext('2d');
-		this.context = context;
+		this.canvas = document.getElementsByTagName('canvas')[0];
+
+		if (this.canvas.getContext) {
+			this.context = this.canvas.getContext('2d');
+
+			this.resizeScreen();
+		}
+
+	}
+
+	resizeScreen() {
+		this.canvas = document.getElementsByTagName('canvas')[0];
+		canvas = this.canvas;
+		this.context = this.canvas.getContext('2d');
+
+		this.canvas.width =  1200;
+		this.canvas.height = 800;
+		
+		HEIGHT = 800;
+		WIDTH  = 1200;
+		console.log(HEIGHT, WIDTH);
+		console.log(this.canvas.width, this.canvas.height);
+
+		canvas.addEventListener('touchstart', this.touchStart, false);
+		canvas.addEventListener('touchmove', this.touchMove, false);
+		canvas.addEventListener('touchcancel', this.touchHandler, false);
+		canvas.addEventListener('touchend', this.touchHandler, false);
+	 }
+
+	
+	 touchStart(e) {
+		if (this.clickTimer == null  && e.touches[0] !== null){
+			var touch = e.touches[0];
+			this.clickTimer = setTimeout(function () {
+				this.clickTimer = null;	
+				console.log(touch, this.canvas.width);
+				input.x = touch.pageX - canvas.offsetLeft;
+				input.y = touch.pageY - canvas.offsetTop;	
+			}, 300)
+		} else {
+			clearTimeout(this.clickTimer);
+			this.clickTimer = null;
+			input.jump = true; 
+		}
+	}
+
+	touchMove(e) {
+		if(e.touches && e.touches[0] !== null) {
+		input.x = e.touches[0].pageX - canvas.offsetLeft;
+		input.y = e.touches[0].pageY - canvas.offsetTop;		
+		}
+	}
+		
+	touchHandler(e) {
+		var touch = e.touches[0]
+
+		console.log(touch);
+		if(e.touches && touch !== null) {
+			input.x = touch.pageX - canvas.offsetLeft;
+			input.y = touch.pageY - canvas.offsetTop;		
+		}
 	}
 }
+
+
+canvas = null; 
 
 class Game {
 	constructor(context, IOConnection, gameMode) {
@@ -39,6 +102,13 @@ class Game {
 
 		if (this.mode === MODE.ONE_PLAYER_MODE) {
 			this.gameObjects.dude1.setDirection();
+			if (input.x !=0) {
+				this.gameObjects.dude1.moveToDirection(input.x);
+			}
+			if (input.jump) {
+				this.gameObjects.dude1.callJump(); 
+				input.jump = false; 
+			}
 			this.gameObjects.dude2.aiMove(ball.x,ball.y,ball.vector);
 		}	
 		else if (this.mode === MODE.TWO_PLAYER_MODE) {
@@ -233,6 +303,7 @@ class Game {
 				this.initGameObjects();
 			}
 			else {
+				this.drawGameState();
 				this.drawEnding(); 
 				this.stop();
 			}
@@ -268,7 +339,10 @@ class Game {
 	drawScore() {
 		let score = this.score;
 		this.context.fillStyle = MENU_FONT_COLOUR_ACTIVE;
+		this.context.strokeStyle = "white";
+        this.context.lineWidth = 2;
 		this.context.fillText(score.left + " : " + score.right, WIDTH * 0.45, HEIGHT * 0.1); 
+		this.context.strokeText(score.left + " : " + score.right, WIDTH * 0.45, HEIGHT * 0.1);
 	}
 
 	drawEnding() {
@@ -282,8 +356,15 @@ class Game {
 			text = "Right";
 		}
 
+		this.context.strokeStyle = "white";
+        this.context.lineWidth = 2;
+
 		this.context.fillText(text + " dude WINS!", WIDTH * 0.25, HEIGHT * 0.4); 
+		this.context.strokeText(text + " dude WINS!", WIDTH * 0.25, HEIGHT * 0.4);
+
 		this.context.fillText("Press [ENTER] for restart", WIDTH * 0.35, HEIGHT * 0.6);
+		this.context.strokeText("Press [ENTER] for restart", WIDTH * 0.35, HEIGHT * 0.6);
+
 	}
 
 	stop() {
@@ -295,7 +376,7 @@ class Game {
 	}
 
 	drawGameState() {
-		this.context.clearRect(0, 0, WIDTH, HEIGHT);
+		this.context.clearRect(0, 0, WIDTH+200, HEIGHT+200);
 		this.drawScore();
 
 		for (var object in this.gameObjects) {

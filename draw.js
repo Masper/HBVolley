@@ -1,14 +1,43 @@
 const ballDrawLogic = {
 	draw() {
-    	this.context.beginPath();
-    	this.context.arc(this.x, HEIGHT - this.y, this.radius, 0, 2 * Math.PI, false);
-   		this.context.fillStyle = '#000000';
-   		this.context.fill();
-
+ 
   		this.context.beginPath();
-   		this.context.arc(this.x, HEIGHT - this.y, this.radius -3, 0, 2 * Math.PI, false);
-   		this.context.fillStyle = this.colour; 
+   		this.context.arc(this.x, HEIGHT - this.y, this.radius, 0, 2 * Math.PI, false);
+		this.context.fillStyle = BALL_COLOUR;
 		this.context.fill();
+		this.context.strokeStyle = 'black';
+		this.context.stroke();
+	}
+}
+
+const suarezDrawLogic = {
+	draw() {
+		if (this.loading == true) {
+			return; 
+		}
+		if (!this.ready == true) {
+			this.loadImage();
+			this.loading = true; 
+			return;
+		}
+
+		console.log("starting draw");
+
+		this.context.drawImage(this.image, this.x- 1.2*this.radius, HEIGHT - this.radius - this.y, this.radius*1.6, this.radius*2);
+	},
+	loadImage() {
+		this.image = new Image();
+		this.image.onload = () => {
+			this.ready = true; 
+			this.loading = false; 
+		};
+		if (this.isLeft) {
+		this.image.src = "suarez.svg";
+		}
+		else {
+			this.image.src = "messi.png";
+		}
+
 	}
 }
 
@@ -19,26 +48,30 @@ const dudeDrawLogic = {
    		this.drawInnerEye();   
    		this.drawBlink();
 	},
-	drawBody() {
-		console.log(MAKE_ROUND);
+	drawBody() {	
 		this.context.beginPath();
-		this.context.arc(this.x, HEIGHT - this.y  , this.radius,  MAKE_ROUND ? 0 : Math.PI, 2 * Math.PI, false);
-		this.context.fillStyle = '#000000';
-		this.context.fill();
+				// Create gradient
 		
-		this.context.beginPath();
-		this.context.arc(this.x, HEIGHT - this.y, this.radius -3,  MAKE_ROUND ? 0 : Math.PI, 2 * Math.PI, false);
-		this.context.fillStyle = this.colour; 
+		if (this.isLeft) {
+			this.context.fillStyle = DUDE_COLOUR;
+		} else { this.context.fillStyle = DEBUG_COLOUR;
+		}
+		this.context.arc(this.x, HEIGHT - this.y, this.radius,  MAKE_ROUND ? 0 : Math.PI, 2 * Math.PI, false);
+
 		this.context.fill();
+		this.context.strokeStyle = '#000000';
+		this.context.stroke();
+
 	
 		if (!MAKE_ROUND) {
 		this.context.beginPath();
+		this.context.strokeStyle = '#000000';
 		this.context.moveTo(this.x - this.radius, HEIGHT - this.y - 1);
 		this.context.lineTo(this.x + this.radius, HEIGHT - this.y - 1);
-		this.context.lineWidth = 3;
+		this.context.lineWidth = 2;
+		this.context.stroke();
 		}
 	
-		this.context.stroke();
 	},
 	drawEye() {
 		let k; 
@@ -59,7 +92,7 @@ const dudeDrawLogic = {
 		if (this.blink < 25 && this.blink > 0) {
 			this.blink += 1.5; 
 			let k; 
-			this.isPlayer ? k = 1 : k = -1;
+			this.isLeft ? k = 1 : k = -1;
 			this.context.beginPath();
 			this.context.rect(this.x + k * this.radius/5.9,	HEIGHT - this.radius/1.4 - this.y, k * 30, this.blink);
 			this.context.fillStyle = this.colour; 

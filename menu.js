@@ -26,13 +26,18 @@ class Menu {
         this.items = [];
         this.menuScreen = 1;  
 		// because the font won't always load
-		setTimeout(() => this._firstMenu(), 100);
+        setTimeout(() => {
+            this.setMenuItems1(); this._drawMenuItems()}
+            ,100);
 		this._setControls();
 	}
 
 	_drawMenuItems() {
+        console.log(this.items);
 		this.context.clearRect(0, 0, WIDTH, HEIGHT);
         this.context.font = MENU_FONT;
+        this.context.strokeStyle = "white";
+        this.context.lineWidth = 2;
 
 		for (let i = 0; i < this.items.length; i++) {	
             let item = this.items[i];
@@ -41,13 +46,17 @@ class Menu {
                 continue; 
             }
 			if (item.active) {
-				this.context.fillStyle = MENU_FONT_COLOUR_ACTIVE;
+                this.context.fillStyle = MENU_FONT_COLOUR_ACTIVE;
+
 			}
 			else {
-				this.context.fillStyle = MENU_FONT_COLOUR;
+                this.context.fillStyle = MENU_FONT_COLOUR;              
+
 			}
 	
-			this.context.fillText(item.text, WIDTH * 0.3, HEIGHT * item.location); 
+            this.context.fillText(item.text, WIDTH * 0.4, HEIGHT * item.location); 
+            this.context.strokeText(item.text, WIDTH * 0.4, HEIGHT * item.location); 
+
 		}
 	}
 
@@ -86,8 +95,12 @@ class Menu {
             active.add(this.addition);
         }
 
-        this._settingsMenu();
+        this.setMenuItems3();
+        this.items.forEach(e => e.active = false);
+        console.log(active.location);
+        this.items.find(e => e.location === active.location).active = true; 
 
+        this._drawMenuItems();
     }
 
 
@@ -100,20 +113,24 @@ class Menu {
         }
 
         if(active.action == ACTION.CHANGE_SETTINGS) {
-            this._settingsMenu(); 
+            this.menuScreen = 3; 
+            this.setMenuItems3();
             this._drawMenuItems();
         }
 
         if (active.action == MODE.MULTI_PLAYER_MODE) {
             this.ioConnection.connect(); 
-            this._multiMenu();
+            this.menuScreen = 2; 
+            this.setMenuItems2();
             this._drawMenuItems();
             this._drawDudesWaiting(); 
         }
 
         if (active.action == ACTION.GO_BACK) {
-            reInitializeValues();
-            this._firstMenu(); 
+            applyChangedValues();
+            this.menuScreen = 1;
+            this.setMenuItems1();
+            this._drawMenuItems();
         }
 
         if (active.action == ACTION.SUBSCRIBE) {
@@ -173,7 +190,6 @@ class Menu {
         this.items.forEach(e => e.active = false);
         this.items.forEach(e => e.isSubscribed = false);
 
-
 		direction === DIRECTION.UP ? index +=1 : index -=1; 
 
 		if (index < 0) {
@@ -186,87 +202,53 @@ class Menu {
 		this.items[index].active = true; 
         this._drawMenuItems();
         this._drawDudesWaiting(); 
-		}
+	}
 
-    _firstMenu() { 
-        this.context.clearRect(0, 0, WIDTH, HEIGHT);
-        this.items = [];
-		this.items.push(
-			{
+    setMenuItems1() { 
+        this.items = [{
             'text' : 'SINGLE PLAYER GAME',
             'action' : MODE.ONE_PLAYER_MODE,
 			'location' : LOCATION._1, 
             'active' : true,
-            'screen' : 1
-		  }
-		)
-		this.items.push(
-			{
+            'screen' : 1 },
+          {
             'text' : 'TWO PLAYER GAME',
             'action' : MODE.TWO_PLAYER_MODE,
 			'location' : LOCATION._2, 
             'active' : false,
-            'screen' : 1
-            }
-        )
-        
-        this.items.push(
+            'screen' : 1 },
 			{
             'text' : 'AI BATTLE GAME',
             'action' : MODE.AI_BATTLE_MODE,
 			'location' : LOCATION._3,
             'active' : false,
-            'screen' : 1
-			}
-        )
-
-		this.items.push(
-			{
+            'screen' : 1 }, 
+          {
             'text' : 'MULTI PLAYER GAME',
             'action' : MODE.MULTI_PLAYER_MODE,
 			'location' : LOCATION._4,
             'active' : false,
-            'screen' : 1
-			}
-        )
-
-        this.items.push(
-			{
-            'text' : 'GAME SETTINGS',
+            'screen' : 1 },
+	        {   
+             'text' : 'GAME SETTINGS',
             'action' : ACTION.CHANGE_SETTINGS,
 			'location' : LOCATION._5,
             'active' : false,
-            'screen' : 1
-			}
-        )
-        this.menuScreen = 1; 
-
-		this._drawMenuItems();
+            'screen' : 1 }]
     }
 
-    _settingsMenu() {
-        this.menuScreen = 3; 
-
-        this.context.clearRect(0, 0, WIDTH, HEIGHT);
-        
-        this.items = [];
-        console.log(configuration.size.ballRadius);
-        console.log(configuration.size.dudeRadius);
-
-        this.items.push( 
-            {
+    setMenuItems3() { 
+        this.items = 
+                [{
                 'text': 'Radius dudes: ' + configuration.size.dudeRadius,
                 'action': ACTION.CHANGE_NUMBER,
                 'size': 1,
                 'location' : LOCATION._1, 
                 'active' : true, 
                 'screen' : 3,
-                'add' : function(add) {configuration.size.dudeRadius += add;
+                'add' : function(add) {configuration.size.dudeRadius += add
                 }
-            }
-        );
-
-        this.items.push( 
+            },
             {
                 'text': 'Radius ball: ' + configuration.size.ballRadius,
                 'action': ACTION.CHANGE_NUMBER,
@@ -276,10 +258,7 @@ class Menu {
                 'screen' : 3,
                 'add' : function(add) {configuration.size.ballRadius += add;
                 }
-             }
-        );
-
-        this.items.push( 
+            },
             {
                 'text': 'Max speed dude: ' + configuration.speed.maxSpeedDude,
                 'action': ACTION.CHANGE_NUMBER,
@@ -287,12 +266,9 @@ class Menu {
                 'location' : LOCATION._3, 
                 'active' : false, 
                 'screen' : 3,
-                'add' : function(add) {configuration.speed.maxSpeedDude += add;
+                'add' : function(add) {configuration.speed.maxSpeedDude = Math.round((configuration.speed.maxSpeedDude + add)*10)/10;
                 }
-            }
-        );
-
-        this.items.push( 
+            },
             {
                 'text': 'Max speed ball: ' + configuration.speed.maxSpeedBall,
                 'action': ACTION.CHANGE_NUMBER,
@@ -300,12 +276,10 @@ class Menu {
                 'location' : LOCATION._4,
                 'active' : false, 
                 'screen' : 3,
-                'add' : function(add) {configuration.speed.maxSpeedBall += add;
+                'add' : function(add) {
+                   configuration.speed.maxSpeedBall = Math.round((configuration.speed.maxSpeedBall + add)*10)/10;
                 }
-            }
-        );
-
-        this.items.push( 
+            },
             {
                 'text': 'Round boys: ' + configuration.visuals.makeRound,
                 'action': ACTION.CHANGE_NUMBER,
@@ -315,10 +289,7 @@ class Menu {
                 'screen' : 3,
                 'add' : function() {configuration.visuals.makeRound = !configuration.visuals.makeRound;
                 }
-            }
-        );
-
-        this.items.push( 
+            },
             {
                 'text': 'Ground height: ' + configuration.location.ground,
                 'action': ACTION.CHANGE_NUMBER,
@@ -328,10 +299,7 @@ class Menu {
                 'screen' : 3,
                 'add' : function(add) {configuration.location.ground += add;
                 }
-            }
-        );
-
-        this.items.push( 
+            },
             {
                 'text': 'Barrier height: ' + configuration.barrier.height,
                 'action': ACTION.CHANGE_NUMBER,
@@ -341,11 +309,7 @@ class Menu {
                 'screen' : 3,
                 'add' : function(add) {configuration.barrier.height += add;
                 }
-            }
-        );
-
-        this.items.push( 
-            {
+            },{
                 'text': 'Jump speed: ' + configuration.physics.initalJumpVelocity,
                 'action': ACTION.CHANGE_NUMBER,
                 'size': 0.1,
@@ -354,34 +318,19 @@ class Menu {
                 'screen' : 3,
                 'add' : function(add) {configuration.physics.initalJumpVelocity += add;
                 }
-            }
-        );
-
- 
-        this.items.push (
+            },
             {
                 'text': 'GO BACK',
                 'action': ACTION.GO_BACK,
                 'location' : LOCATION._9,
                 'active' : false, 
                 'screen' : 3
-            }
-        )
-
-        this.menuScreen = 3; 
-        this._drawMenuItems();
+            }]
     }
 
-    newSettingItem() {
-
-    }
-
-    _multiMenu() {
-        this.context.clearRect(0, 0, WIDTH, HEIGHT);
-        this.items = [];
-
-        this.items.push( 
-            {
+    setMenuItems2() {
+        this.items =  
+            [{
                 'text': 'ROOM 1',
                 'action': ACTION.SUBSCRIBE,
                 'location' : LOCATION._1, 
@@ -389,44 +338,13 @@ class Menu {
                 'screen' : 2,
                 'room' : 1,
                 'hasDudeWaiting': true
-            }
-        );
-
-        /*
-
-        this.items.push( 
-            {
-                'text': 'ROOM 2',
-                'action': ACTION.SUBSCRIBE,
-                'location' : LOCATION._2, 
-                'active' : false, 
-                'screen' : 2,
-                'room' : 2
-            }
-        );
-
-        this.items.push( 
-            {
-                'text': 'ROOM 3',
-                'action': ACTION.SUBSCRIBE,
-                'location' : LOCATION._3, 
-                'active' : false, 
-                'screen' : 2,
-                'room' : 3
-            }
-        );
-        */
-
-        this.items.push (
+            },
             {
                 'text': 'GO BACK',
                 'action': ACTION.GO_BACK,
                 'location' : LOCATION._4,
                 'active' : false, 
                 'screen' : 2
-            }
-        )
-
-        this.menuScreen = 2; 
+            }   ]  
     }
 }

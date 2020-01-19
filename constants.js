@@ -78,13 +78,13 @@ const DEBUG_COLOUR = '#E116C0';
 const BARRIER_COLOUR = '#000000'; 
 
 var MAKE_ROUND = configuration.visuals.makeRound;
-var WIDTH = configuration.screen.width; 
-var HEIGHT = configuration.screen.height;
+var WIDTH = 0;
+var HEIGHT = 0;
 
-var MENU_FONT = "45px 'Lilita One";
+var MENU_FONT = "55px 'Lilita One";
 var MENU_FONT_COLOUR = '#09C60B';
 var MENU_FONT_COLOUR_ACTIVE = '#E116C0';
-var ENDING_TEXT_STYLING = "16px 'Lilita One";
+var ENDING_TEXT_STYLING = "326px 'Lilita One";
 
 var BALL_RADIUS = configuration.size.ballRadius;
 var DUDE_RADIUS = configuration.size.dudeRadius;
@@ -103,7 +103,7 @@ var DUDE_FRICTION = configuration.physics.dudeFriction;
 var GROUND_FRICTION = configuration.physics.groundFriction;
 var WALL_FRICTION = configuration.physics.wallFriction;
 
-let reInitializeValues = function() {
+let applyChangedValues = function() {
 BALL_RADIUS = configuration.size.ballRadius;
 DUDE_RADIUS = configuration.size.dudeRadius;
 GROUND_LEVEL = configuration.location.ground; 
