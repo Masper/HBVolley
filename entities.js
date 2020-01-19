@@ -141,6 +141,20 @@ class Dude extends GameObject{
 		this.direction = DIRECTION.STOP;
 	}
 
+	moveToDirection(x) {
+		if (x<5||  x>WIDTH/2) {
+			return;
+		}
+		if (x  > this.x) {
+			this.direction = DIRECTION.RIGHT;
+		}
+		else if (x < this.x) {
+			this.direction = DIRECTION.LEFT; 
+		} else {
+			this.direction = DIRECTION.STOP;
+		}
+	}
+
 	applyDirection() {
 		if (this.direction === DIRECTION.LEFT) {	
 			this.vector.dx -= HORIZONTAL_MOMENTUM; 
