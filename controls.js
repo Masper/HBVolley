@@ -2,26 +2,31 @@ const touchControls= {
 
 	LEFT: {
 		setDirection() {
-			document.getElementById("buttonRight").addEventListener('touchstart', e => {
-				this.direction=DIRECTION.RIGHT;
-				console.log("clicky click right");}
-				, true);
+			if (!this.addedControls == true) {
+				this.addDirectives();
+				this.addedControls == true;
+			}
+		},
+		
+		addDirectives() {
+			document.getElementById("buttonRight").addEventListener('touchstart', e => this.direction=DIRECTION.RIGHT
+			,{passive: true});
 
-			document.getElementById("buttonLeft").addEventListener('touchstart', e => {
-					this.direction=DIRECTION.LEFT;
-					console.log("clicky click left");}
-					, true);
+			document.getElementById("buttonLeft").addEventListener('touchstart', e => this.direction=DIRECTION.LEFT
+			,{passive: true});
 
-			document.getElementById("jumpLeft").addEventListener('touchstart', e => {
-				this.callJump(); 
-				console.log("jump");}
-				, true);
+			document.getElementById("buttonRight").addEventListener('touchend', e => this.direction=DIRECTION.STOP
+			,{passive: true});
 
-			document.getElementById("jumpRight").addEventListener('touchstart', e => {
-				this.callJump(); 
-				console.log("jump");}
-			, true);
-		}
+			document.getElementById("buttonLeft").addEventListener('touchend', e => this.direction=DIRECTION.STOP
+			,{passive: true});
+
+			document.getElementById("jumpLeft").addEventListener('touchstart', e =>  this.callJump()
+			,{passive: true});
+
+			document.getElementById("jumpRight").addEventListener('touchstart', e => this.callJump()
+			,{passive: true});
+		}	
 	}
 }
 
