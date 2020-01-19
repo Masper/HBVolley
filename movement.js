@@ -14,6 +14,7 @@ const dudeMovement = {
 			}
 			if (this.x <= 0) {
 				this.x = 0; 
+				this.jumping = false;
 			}
 		}
 		else {

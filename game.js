@@ -60,13 +60,6 @@ class Game {
 
 		if (this.mode === MODE.ONE_PLAYER_MODE) {
 			this.gameObjects.dude1.setDirection();
-			if (input.x !=0) {
-				this.gameObjects.dude1.moveToDirection(input.x);
-			}
-			if (input.jump) {
-				this.gameObjects.dude1.callJump(); 
-				input.jump = false; 
-			}
 			this.gameObjects.dude2.aiMove(ball.x,ball.y,ball.vector);
 		}	
 		else if (this.mode === MODE.TWO_PLAYER_MODE) {

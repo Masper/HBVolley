@@ -184,8 +184,12 @@ class Dude extends GameObject{
 	}
 
 	callJump() {
+		if (this.isJumping == true) {
+			return; 
+		}
 		if (this.vector.dy == 0 || this.y == 0) {
 			this.vector.dy = INITAL_JUMP_VELOCITY;
+			this.isJumping == true
 		}
 	}
 
