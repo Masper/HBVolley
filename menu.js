@@ -28,7 +28,7 @@ class Menu {
 		// because the font won't always load
         setTimeout(() => {
             this.setMenuItems1(); this._drawMenuItems()}
-            ,100);
+            ,200);
 		this._setControls();
 	}
 
@@ -74,6 +74,46 @@ class Menu {
                 this.changeActiveNumber(false); 
             }
         }
+
+        canvas.addEventListener("touchstart", e => {
+            if (this.game != null) {
+                return;
+            }
+            e = e.touches[0];
+            var rect = canvas.getBoundingClientRect()
+
+            var coordinate = {
+                x: (e.clientX - rect.left) / (rect.right - rect.left ) * canvas.width ,
+                y: (e.clientY - rect.top) / (rect.bottom - rect.top) * canvas.height
+            };
+
+            this.checkMenuInput(coordinate);
+        }); 
+    }
+
+    checkMenuInput(coordinate) {
+        let clickPosition =  coordinate.y / HEIGHT;
+
+        for (let i = 0; i < this.items.length; i++) {
+            let dif = Math.abs(this.items[i].location - clickPosition);
+
+            if (dif < 0.05) {
+                if (this.items[i].active == true) {
+                    if (this.items[i].action == ACTION.CHANGE_NUMBER) {
+                        this.changeActiveNumber(true);
+                        return;
+                    }
+                    this._enterMenuItem(); 
+                    return;
+                }
+                else {
+                this.items.forEach(e => e.active = false);
+                this.items[i].active = true; 
+                }
+            }
+          }
+
+        this._drawMenuItems();
     }
 
     changeActiveNumber(add) {
@@ -83,27 +123,19 @@ class Menu {
         let active = this.items.find(e => e.active);
         this.addition = active.size;
 
-        console.log(this.addition);
-
         if (add) {
-            console.log("add");
             active.add(this.addition);
         } else {
             this.addition = this.addition *-1;
-
-            console.log("deduct");
             active.add(this.addition);
         }
 
         this.setMenuItems3();
         this.items.forEach(e => e.active = false);
-        console.log(active.location);
         this.items.find(e => e.location === active.location).active = true; 
 
         this._drawMenuItems();
     }
-
-
 
     _enterMenuItem() {
         let active = this.items.find(e => e.active);
@@ -176,12 +208,11 @@ class Menu {
 		this.context.fill();
     }
 
-	_startGame(mode) {  
-        // should be callback for gamerunner
+	_startGame(mode) {          
         this.items = []; 
         window.onkeydown = null;
-		let game = new Game(this.context, this.ioConnection, mode);
-		game.run();
+		this.game = new Game(this.context, this.ioConnection, mode);
+		this.game.run();
 	}
 
 	_changeActive(direction) {

@@ -5,7 +5,11 @@ class GameRunner {
 	constructor(ioConnection) {
 		this.initCanvas();
 		this.menu = new Menu(this.context, ioConnection);
-		this.canvas;
+
+		canvas.addEventListener('touchstart', this.touchStart, false);
+		canvas.addEventListener('touchmove', this.touchMove, false);
+		canvas.addEventListener('touchcancel', this.touchHandler, false);
+		canvas.addEventListener('touchend', this.touchHandler, false);
 	}
 
 	initCanvas() {
@@ -16,7 +20,6 @@ class GameRunner {
 
 			this.resizeScreen();
 		}
-
 	}
 
 	resizeScreen() {
@@ -32,21 +35,23 @@ class GameRunner {
 		console.log(HEIGHT, WIDTH);
 		console.log(this.canvas.width, this.canvas.height);
 
-		canvas.addEventListener('touchstart', this.touchStart, false);
-		canvas.addEventListener('touchmove', this.touchMove, false);
-		canvas.addEventListener('touchcancel', this.touchHandler, false);
-		canvas.addEventListener('touchend', this.touchHandler, false);
 	 }
 
 	
-	 touchStart(e) {
-		if (this.clickTimer == null  && e.touches[0] !== null){
-			var touch = e.touches[0];
+	 touchStart(e) {	 
+            e = e.touches[0];
+            var rect = canvas.getBoundingClientRect()
+
+            var coordinate = {
+                x: (e.clientX - rect.left) / (rect.right - rect.left ) * canvas.width ,
+                y: (e.clientY - rect.top) / (rect.bottom - rect.top) * canvas.height
+            };
+
+		if (this.clickTimer == null) {
 			this.clickTimer = setTimeout(function () {
 				this.clickTimer = null;	
-				console.log(touch, this.canvas.width);
-				input.x = touch.pageX - canvas.offsetLeft;
-				input.y = touch.pageY - canvas.offsetTop;	
+				input.x = coordinate.x; 
+				input.y = coordinate.y; 
 			}, 300)
 		} else {
 			clearTimeout(this.clickTimer);
@@ -56,19 +61,33 @@ class GameRunner {
 	}
 
 	touchMove(e) {
-		if(e.touches && e.touches[0] !== null) {
-		input.x = e.touches[0].pageX - canvas.offsetLeft;
-		input.y = e.touches[0].pageY - canvas.offsetTop;		
+		if(e.touches && e.touches[0] != null && e.touches[0] != undefined) {
+			e = e.touches[0];
+            var rect = canvas.getBoundingClientRect()
+
+            var coordinate = {
+                x: (e.clientX - rect.left) / (rect.right - rect.left ) * canvas.width ,
+                y: (e.clientY - rect.top) / (rect.bottom - rect.top) * canvas.height
+			};
+			
+			input.x = coordinate.x; 
+			input.y = coordinate.y; 
 		}
 	}
 		
 	touchHandler(e) {
 		var touch = e.touches[0]
+		if(e.touches && touch != null && touch != undefined) {
+			e = e.touches[0];
+            var rect = canvas.getBoundingClientRect()
 
-		console.log(touch);
-		if(e.touches && touch !== null) {
-			input.x = touch.pageX - canvas.offsetLeft;
-			input.y = touch.pageY - canvas.offsetTop;		
+            var coordinate = {
+                x: (e.clientX - rect.left) / (rect.right - rect.left ) * canvas.width ,
+                y: (e.clientY - rect.top) / (rect.bottom - rect.top) * canvas.height
+			};
+			
+			input.x = coordinate.x; 
+			input.y = coordinate.y; 	
 		}
 	}
 }
@@ -299,6 +318,8 @@ class Game {
 
 	detectEnding() {
 		if (this.gameObjects.ball.hitGround > 0 ) {
+			input.x = 0; 
+			input.y = 0;
 			if (this.updateScore()) {
 				this.initGameObjects();
 			}
