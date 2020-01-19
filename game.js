@@ -5,11 +5,6 @@ class GameRunner {
 	constructor(ioConnection) {
 		this.initCanvas();
 		this.menu = new Menu(this.context, ioConnection);
-
-		canvas.addEventListener('touchstart', this.touchStart, false);
-		canvas.addEventListener('touchmove', this.touchMove, false);
-		canvas.addEventListener('touchcancel', this.touchHandler, false);
-		canvas.addEventListener('touchend', this.touchHandler, false);
 	}
 
 	initCanvas() {
@@ -34,64 +29,8 @@ class GameRunner {
 		WIDTH  = 1200;
 		console.log(HEIGHT, WIDTH);
 		console.log(this.canvas.width, this.canvas.height);
-
 	 }
-
-	
-	 touchStart(e) {	 
-            e = e.touches[0];
-            var rect = canvas.getBoundingClientRect()
-
-            var coordinate = {
-                x: (e.clientX - rect.left) / (rect.right - rect.left ) * canvas.width ,
-                y: (e.clientY - rect.top) / (rect.bottom - rect.top) * canvas.height
-            };
-
-		if (this.clickTimer == null) {
-			this.clickTimer = setTimeout(function () {
-				this.clickTimer = null;	
-				input.x = coordinate.x; 
-				input.y = coordinate.y; 
-			}, 300)
-		} else {
-			clearTimeout(this.clickTimer);
-			this.clickTimer = null;
-			input.jump = true; 
-		}
-	}
-
-	touchMove(e) {
-		if(e.touches && e.touches[0] != null && e.touches[0] != undefined) {
-			e = e.touches[0];
-            var rect = canvas.getBoundingClientRect()
-
-            var coordinate = {
-                x: (e.clientX - rect.left) / (rect.right - rect.left ) * canvas.width ,
-                y: (e.clientY - rect.top) / (rect.bottom - rect.top) * canvas.height
-			};
-			
-			input.x = coordinate.x; 
-			input.y = coordinate.y; 
-		}
-	}
-		
-	touchHandler(e) {
-		var touch = e.touches[0]
-		if(e.touches && touch != null && touch != undefined) {
-			e = e.touches[0];
-            var rect = canvas.getBoundingClientRect()
-
-            var coordinate = {
-                x: (e.clientX - rect.left) / (rect.right - rect.left ) * canvas.width ,
-                y: (e.clientY - rect.top) / (rect.bottom - rect.top) * canvas.height
-			};
-			
-			input.x = coordinate.x; 
-			input.y = coordinate.y; 	
-		}
-	}
 }
-
 
 canvas = null; 
 
@@ -162,6 +101,7 @@ class Game {
 		.setX(WIDTH*0.25)
 		.setY(0)
 		.setIsLeft(true)
+		.setUseTouchControls(touchDetected)
 		.setIsHuman(this.mode === MODE.AI_BATTLE_MODE ? false : true)
 		.setAi(this.mode === MODE.AI_BATTLE_MODE ? new AI(true) : null)
 		.build();
@@ -314,7 +254,6 @@ class Game {
 			this.gameObjects.ball.bounceWithDirection(DIRECTION.UP);
 		}
 	}
-
 
 	detectEnding() {
 		if (this.gameObjects.ball.hitGround > 0 ) {

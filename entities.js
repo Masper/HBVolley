@@ -27,6 +27,11 @@ class GameObjectBuilder {
 		return this; 
 	}
 
+	setUseTouchControls(input) {
+		this.useTouchControls = input;
+		return this; 
+	}
+
 	setIsHuman(isHuman) {
 		this.isHuman = isHuman;
 		return this; 
@@ -65,9 +70,14 @@ class GameObjectBuilder {
 
 			if (this.isHuman) {
 				if (this.isLeft) {
-					Object.assign(gameObject, controls.LEFT);
+					if (this.useTouchControls) {
+						Object.assign(gameObject, touchControls.LEFT);
+					}
+					else {
+						Object.assign(gameObject, controlsKeyboard.LEFT);
+					}
 				} else {
-					Object.assign(gameObject, controls.RIGHT); 
+					Object.assign(gameObject, controlsKeyboard.RIGHT); 
 				}
 			} else {
 				gameObject.setAi(this.ai);
