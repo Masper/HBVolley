@@ -9,10 +9,18 @@ const touchControls= {
 		},
 		
 		addDirectives() {
-			document.getElementById("buttonRight").addEventListener('touchstart', e => this.direction=DIRECTION.RIGHT
+			document.getElementById("buttonRight").addEventListener('touchstart', e => 	{
+			if (this.direction=DIRECTION.LEFT) {
+				this.callJump();
+			}
+			this.direction=DIRECTION.RIGHT;}
 			,{passive: true});
 
-			document.getElementById("buttonLeft").addEventListener('touchstart', e => this.direction=DIRECTION.LEFT
+			document.getElementById("buttonLeft").addEventListener('touchstart', e => {
+				if (this.direction=DIRECTION.RIGHT) {
+					this.callJump();
+				}
+				this.direction=DIRECTION.LEFT;}	
 			,{passive: true});
 
 			document.getElementById("buttonRight").addEventListener('touchend', e => this.direction=DIRECTION.STOP
